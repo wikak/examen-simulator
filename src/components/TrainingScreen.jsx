@@ -10,8 +10,10 @@ import {
   dominantTheme,
   filterBank,
   isMastered,
+  loadLastSession,
   loadProgress,
   recordAnswer,
+  saveLastSession,
   saveProgress,
 } from '../lib/training.js'
 
@@ -32,6 +34,29 @@ const ORDER_OPTIONS = [
   { key: 'sequential', label: '↦ Séquentiel' },
 ]
 
+const TRACK_FILTERS = [
+  { key: 'all', label: 'Toutes' },
+  { key: 'seen', label: 'Déjà vues' },
+  { key: 'new', label: 'Jamais vues' },
+  { key: 'wrong', label: 'Ratées' },
+  { key: 'mastered', label: 'Maîtrisées' },
+]
+const TRACK_SORTS = [
+  { key: 'id', label: 'N°' },
+  { key: 'attempts', label: 'Plus vues' },
+  { key: 'recent', label: 'Récentes' },
+]
+
+function formatLast(ts) {
+  if (!ts) return ''
+  const min = Math.round((Date.now() - ts) / 60000)
+  if (min < 1) return "à l'instant"
+  if (min < 60) return `il y a ${min} min`
+  const h = Math.round(min / 60)
+  if (h < 24) return `il y a ${h} h`
+  return `il y a ${Math.round(h / 24)} j`
+}
+
 export default function TrainingScreen() {
   const bank = TRAINING_BANK
   const [phase, setPhase] = useState('config') // config | run | summary
@@ -44,6 +69,14 @@ export default function TrainingScreen() {
   const [count, setCount] = useState(20)
   const [order, setOrder] = useState('random')
   const [showHints, setShowHints] = useState(true)
+  const [rangeFrom, setRangeFrom] = useState('')
+  const [rangeTo, setRangeTo] = useState('')
+
+  // Tracking view
+  const [trackFilter, setTrackFilter] = useState('seen')
+  const [trackSort, setTrackSort] = useState('recent')
+  const [trackSearch, setTrackSearch] = useState('')
+  const [expandedId, setExpandedId] = useState(null)
 
   // Running session
   const [session, setSession] = useState([])
@@ -52,11 +85,14 @@ export default function TrainingScreen() {
   const [revealed, setRevealed] = useState(false)
   const [results, setResults] = useState([]) // [{ q, selected, ok }]
 
-  const cfg = { theme, status, qtype, count, order }
+  const parsedFrom = rangeFrom === '' ? null : Math.max(1, parseInt(rangeFrom, 10) || 1)
+  const parsedTo = rangeTo === '' ? null : Math.max(1, parseInt(rangeTo, 10) || 1)
+  const cfg = { theme, status, qtype, count, order, rangeFrom: parsedFrom, rangeTo: parsedTo }
   const pool = useMemo(
     () => filterBank(bank, progress, cfg),
-    [bank, progress, theme, status, qtype],
+    [bank, progress, theme, status, qtype, parsedFrom, parsedTo],
   )
+  const lastSeries = useMemo(() => loadLastSession(bank), [bank, phase])
 
   const stats = useMemo(() => {
     let seen = 0
@@ -72,9 +108,9 @@ export default function TrainingScreen() {
     return { seen, mastered, wrong, total: bank.length }
   }, [bank, progress])
 
-  function startSession() {
-    const list = buildTrainingSession(bank, progress, cfg)
-    if (list.length === 0) return
+  function launch(list, { save = false } = {}) {
+    if (!list || list.length === 0) return
+    if (save) saveLastSession(list)
     setSession(list)
     setIndex(0)
     setSelected([])
@@ -82,6 +118,18 @@ export default function TrainingScreen() {
     setResults([])
     setPhase('run')
     window.scrollTo(0, 0)
+  }
+
+  function startSession() {
+    launch(buildTrainingSession(bank, progress, cfg), { save: true })
+  }
+
+  function replaySeries() {
+    launch(session)
+  }
+
+  function replayLastSeries() {
+    launch(loadLastSession(bank))
   }
 
   const q = session[index]
@@ -124,15 +172,7 @@ export default function TrainingScreen() {
   }
 
   function replayErrors() {
-    const wrongQs = results.filter((r) => !r.ok).map((r) => r.q)
-    if (wrongQs.length === 0) return
-    setSession(wrongQs)
-    setIndex(0)
-    setSelected([])
-    setRevealed(false)
-    setResults([])
-    setPhase('run')
-    window.scrollTo(0, 0)
+    launch(results.filter((r) => !r.ok).map((r) => r.q))
   }
 
   function resetProgress() {
@@ -197,11 +237,20 @@ export default function TrainingScreen() {
           <p className="muted small">
             Une question est « maîtrisée » après 2 bonnes réponses d'affilée.
           </p>
-          {stats.seen > 0 && (
-            <button type="button" className="ghost small-btn" onClick={resetProgress}>
-              Réinitialiser la progression
+          <div className="btn-row">
+            <button
+              type="button"
+              className="ghost small-btn"
+              onClick={() => { setExpandedId(null); setPhase('tracking'); window.scrollTo(0, 0) }}
+            >
+              📊 Suivi des questions
             </button>
-          )}
+            {stats.seen > 0 && (
+              <button type="button" className="ghost small-btn" onClick={resetProgress}>
+                Réinitialiser la progression
+              </button>
+            )}
+          </div>
         </section>
 
         <section className="card">
@@ -260,6 +309,42 @@ export default function TrainingScreen() {
                 </button>
               ))}
             </div>
+          </label>
+
+          <label className="field">
+            <span>Plage de questions <span className="muted">(n° d'identifiant, optionnel)</span></span>
+            <div className="range-inputs">
+              <span className="muted">De</span>
+              <input
+                type="number"
+                min="1"
+                max={bank.length}
+                placeholder="1"
+                value={rangeFrom}
+                onChange={(e) => setRangeFrom(e.target.value)}
+              />
+              <span className="muted">à</span>
+              <input
+                type="number"
+                min="1"
+                max={bank.length}
+                placeholder={String(bank.length)}
+                value={rangeTo}
+                onChange={(e) => setRangeTo(e.target.value)}
+              />
+              {(rangeFrom !== '' || rangeTo !== '') && (
+                <button
+                  type="button"
+                  className="ghost small-btn"
+                  onClick={() => { setRangeFrom(''); setRangeTo('') }}
+                >
+                  Effacer
+                </button>
+              )}
+            </div>
+            {parsedFrom != null && parsedTo != null && parsedFrom > parsedTo && (
+              <small className="err">La borne « De » doit être ≤ à la borne « à ».</small>
+            )}
           </label>
 
           <label className="field">
@@ -322,12 +407,179 @@ export default function TrainingScreen() {
                   count === 'all' ? pool.length : Math.min(count, pool.length)
                 } questions)`}
           </button>
+          {lastSeries && (
+            <button type="button" className="ghost big-ghost" onClick={replayLastSeries}>
+              🔁 Rejouer la dernière série ({lastSeries.length} questions)
+            </button>
+          )}
           <p className="muted small">
             {pool.length} question(s) correspondent aux filtres. Raccourcis pendant la
             session : touches A–F pour choisir, Entrée pour valider puis passer à la
             suivante.
           </p>
         </section>
+      </main>
+    )
+  }
+
+  /* ---------- Tracking ---------- */
+  if (phase === 'tracking') {
+    const search = trackSearch.trim().toLowerCase()
+    const matches = (q) => {
+      const p = progress[q.id]
+      if (trackFilter === 'seen' && !p) return false
+      if (trackFilter === 'new' && p) return false
+      if (trackFilter === 'wrong' && !(p && p.lastOk === false)) return false
+      if (trackFilter === 'mastered' && !isMastered(p)) return false
+      if (search) {
+        const hay = (q.id + ' ' + q.question + ' ' + Object.values(q.options).join(' ')).toLowerCase()
+        if (!hay.includes(search)) return false
+      }
+      return true
+    }
+    const list = bank.filter(matches).sort((a, b) => {
+      const pa = progress[a.id]
+      const pb = progress[b.id]
+      if (trackSort === 'attempts') return (pb?.attempts || 0) - (pa?.attempts || 0) || a.id - b.id
+      if (trackSort === 'recent') return (pb?.last || 0) - (pa?.last || 0) || a.id - b.id
+      return a.id - b.id
+    })
+    const counts = {}
+    for (const f of TRACK_FILTERS) counts[f.key] = 0
+    for (const q of bank) {
+      const p = progress[q.id]
+      counts.all++
+      if (p) counts.seen++
+      else counts.new++
+      if (p && p.lastOk === false) counts.wrong++
+      if (isMastered(p)) counts.mastered++
+    }
+
+    return (
+      <main className="screen training">
+        <div className="training-main">
+          <div className="exam-head">
+            <h2 className="track-title">📊 Suivi des questions</h2>
+            <button type="button" className="ghost small-btn" onClick={() => setPhase('config')}>
+              ← Retour
+            </button>
+          </div>
+
+          <div className="card">
+            <div className="chips">
+              {TRACK_FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  className={`chip ${trackFilter === f.key ? 'active' : ''}`}
+                  onClick={() => setTrackFilter(f.key)}
+                >
+                  {f.label} ({counts[f.key]})
+                </button>
+              ))}
+            </div>
+            <div className="track-tools">
+              <input
+                type="search"
+                className="track-search"
+                placeholder="Rechercher (mot-clé, service AWS, n°…)"
+                value={trackSearch}
+                onChange={(e) => setTrackSearch(e.target.value)}
+              />
+              <div className="chips">
+                {TRACK_SORTS.map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    className={`chip ${trackSort === s.key ? 'active' : ''}`}
+                    onClick={() => setTrackSort(s.key)}
+                  >
+                    Tri : {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {list.length > 0 && (
+              <button
+                type="button"
+                className="ghost big-ghost"
+                onClick={() => launch(list, { save: true })}
+              >
+                🎓 S'entraîner sur ces {list.length} question(s)
+              </button>
+            )}
+          </div>
+
+          {list.length === 0 && (
+            <div className="card"><p className="muted">Aucune question ne correspond.</p></div>
+          )}
+
+          <ul className="track-list">
+            {list.map((tq) => {
+              const p = progress[tq.id]
+              const tk = dominantTheme(tq)
+              const open = expandedId === tq.id
+              const statusTag = isMastered(p)
+                ? <span className="tag ok">maîtrisée</span>
+                : p?.lastOk === false
+                  ? <span className="tag ko">ratée</span>
+                  : p
+                    ? <span className="tag unscored">en cours</span>
+                    : <span className="tag unscored">jamais vue</span>
+              const correctLtrs = parseLetters(tq.answer)
+              return (
+                <li key={tq.id} className={`track-item ${open ? 'open' : ''}`}>
+                  <button
+                    type="button"
+                    className="track-row"
+                    onClick={() => setExpandedId(open ? null : tq.id)}
+                  >
+                    <span className="track-id">#{tq.id}</span>
+                    {statusTag}
+                    <span className="track-text">{tq.question}</span>
+                    <span className="track-meta">
+                      <strong>{p?.attempts || 0}×</strong> vue{(p?.attempts || 0) > 1 ? 's' : ''}
+                      {p ? ` · ✓ ${p.correct}` : ''}
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="track-detail">
+                      <div className="badges-row">
+                        {tk && <span className="theme-badge">{THEME_LABELS[tk]}</span>}
+                        {p && (
+                          <span className="theme-badge">
+                            {p.attempts} rencontre{p.attempts > 1 ? 's' : ''} · {p.correct} bonne{p.correct > 1 ? 's' : ''} (
+                            {Math.round((p.correct / p.attempts) * 100)}%) · série : {p.streak} · {formatLast(p.last)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="question-text"><RichText text={tq.question} /></div>
+                      <ul className="review-opts">
+                        {Object.keys(tq.options).map((k) => (
+                          <li key={k} className={correctLtrs.includes(k) ? 'correct' : ''}>
+                            <strong>{k}.</strong> <RichText text={tq.options[k]} />
+                            {correctLtrs.includes(k) && <em className="mark">✓ bonne réponse</em>}
+                          </li>
+                        ))}
+                      </ul>
+                      {tq.radar?.signal && (
+                        <p className="signal">🧭 <strong>Signal :</strong> {tq.radar.signal}</p>
+                      )}
+                      <p className="explication">{tq.explication}</p>
+                      <button
+                        type="button"
+                        className="ghost small-btn"
+                        onClick={() => launch([tq])}
+                      >
+                        🎓 S'entraîner sur cette question
+                      </button>
+                    </div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       </main>
     )
   }
@@ -355,6 +607,9 @@ export default function TrainingScreen() {
                 🔁 Rejouer mes {wrongs.length} erreur(s)
               </button>
             )}
+            <button type="button" className="ghost" onClick={replaySeries}>
+              ↻ Rejouer cette série
+            </button>
             <button type="button" className="ghost" onClick={startSession}>
               Nouvelle session
             </button>

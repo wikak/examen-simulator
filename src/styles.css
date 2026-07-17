@@ -240,6 +240,52 @@ button { font-family: inherit; }
 .mastery-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--orange), var(--green)); }
 
 .small-btn { padding: 7px 14px; font-size: .85rem; }
+.big-ghost { width: 100%; padding: 12px; margin-top: 10px; font-size: .95rem; }
+
+.range-inputs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.range-inputs input[type='number'] {
+  width: 90px; background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px;
+  font-family: inherit; font-size: .95rem;
+}
+.range-inputs input[type='number']:focus { outline: none; border-color: var(--orange); }
+
+/* ---------- Tracking view ---------- */
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.track-title { margin: 0; font-size: 1.2rem; }
+
+.track-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.track-search {
+  flex: 1; min-width: 220px;
+  background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  font-family: inherit; font-size: .92rem;
+}
+.track-search:focus { outline: none; border-color: var(--orange); }
+
+.track-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.track-item { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
+.track-item.open { border-color: var(--orange); }
+.track-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: transparent; border: 0; color: var(--ink); cursor: pointer;
+  padding: 11px 14px; text-align: left; font-size: .88rem; font-family: inherit;
+}
+.track-row:hover { background: var(--panel-2); }
+.track-id { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 42px; }
+.track-text {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink);
+}
+.track-meta { color: var(--muted); white-space: nowrap; font-size: .8rem; }
+.track-meta strong { color: var(--ink); }
+.track-detail { padding: 4px 16px 16px; border-top: 1px dashed var(--line); }
+.track-detail .question-text { font-size: .95rem; margin: 12px 0 12px; }
+.track-detail .review-opts { margin-bottom: 6px; }
+
+@media (max-width: 600px) {
+  .track-text { white-space: normal; }
+  .track-row { flex-wrap: wrap; }
+}
 
 .session-progress { height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
 .session-progress i { display: block; height: 100%; background: var(--orange); transition: width .3s; }

@@ -69,8 +69,10 @@ export function isMastered(entry) {
   return !!entry && entry.streak >= 2
 }
 
-export function filterBank(bank, progress, { theme, status, qtype }) {
+export function filterBank(bank, progress, { theme, status, qtype, rangeFrom, rangeTo }) {
   return bank.filter((q) => {
+    if (rangeFrom != null && q.id < rangeFrom) return false
+    if (rangeTo != null && q.id > rangeTo) return false
     if (theme !== 'all' && dominantTheme(q) !== theme) return false
     const multi = parseLetters(q.answer).length > 1
     if (qtype === 'single' && multi) return false
@@ -88,4 +90,27 @@ export function buildTrainingSession(bank, progress, cfg) {
   const ordered =
     cfg.order === 'sequential' ? [...pool].sort((a, b) => a.id - b.id) : shuffle(pool)
   return cfg.count === 'all' ? ordered : ordered.slice(0, cfg.count)
+}
+
+/* ---------- Last played series (to replay it later) ---------- */
+
+const LAST_SESSION_KEY = 'aws-sandbox-last-session-v1'
+
+export function saveLastSession(questions) {
+  try {
+    localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(questions.map((q) => q.id)))
+  } catch {}
+}
+
+// Returns the questions of the last series, in the order they were played.
+export function loadLastSession(bank) {
+  try {
+    const ids = JSON.parse(localStorage.getItem(LAST_SESSION_KEY))
+    if (!Array.isArray(ids) || ids.length === 0) return null
+    const byId = new Map(bank.map((q) => [q.id, q]))
+    const list = ids.map((id) => byId.get(id)).filter(Boolean)
+    return list.length > 0 ? list : null
+  } catch {
+    return null
+  }
 }
