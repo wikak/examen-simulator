@@ -208,3 +208,93 @@ button { font-family: inherit; }
 .review-opts li.wrong .mark { color: #ff9b8e; }
 
 .footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 28px; }
+
+/* ---------- Mode tabs ---------- */
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 0; }
+.tab {
+  background: transparent; color: var(--muted); cursor: pointer;
+  border: 1px solid transparent; border-bottom: 0;
+  border-radius: 10px 10px 0 0; padding: 11px 20px; font-size: .95rem; font-weight: 600;
+}
+.tab:hover { color: var(--ink); }
+.tab.active {
+  background: var(--panel); color: var(--orange);
+  border-color: var(--line); margin-bottom: -1px;
+}
+
+/* ---------- Training mode ---------- */
+.screen.training { grid-template-columns: 1fr; max-width: 820px; margin: 0 auto; width: 100%; }
+.training-main { display: grid; gap: 14px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 12px; }
+.stat {
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 8px; text-align: center; display: grid; gap: 2px;
+}
+.stat-num { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+.stat-label { font-size: .75rem; color: var(--muted); }
+.stat.good .stat-num { color: #8ee6ad; }
+.stat.bad .stat-num { color: #ff9b8e; }
+
+.mastery-bar { height: 10px; background: var(--panel-2); border-radius: 5px; overflow: hidden; margin: 6px 0 10px; }
+.mastery-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--orange), var(--green)); }
+
+.small-btn { padding: 7px 14px; font-size: .85rem; }
+
+.session-progress { height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+.session-progress i { display: block; height: 100%; background: var(--orange); transition: width .3s; }
+.ok-count { color: #8ee6ad; }
+.ko-count { color: #ff9b8e; }
+
+.badges-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.theme-badge {
+  display: inline-block; font-size: .74rem; font-weight: 700; letter-spacing: .3px;
+  padding: 4px 11px; border-radius: 999px;
+  background: var(--panel-2); color: var(--muted); border: 1px solid var(--line);
+}
+.multi-badge { color: var(--orange); border-color: var(--orange); }
+
+.hintbox {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
+  background: #241d10; border: 1px dashed #7a5a24; border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 14px;
+}
+.hint-title { font-size: .8rem; font-weight: 700; color: #ffcf8f; }
+.trigger-chip {
+  background: #3a2a12; color: #ffcf8f; border: 1px solid #7a5a24;
+  border-radius: 999px; padding: 3px 10px; font-size: .78rem;
+}
+.hintbox.in-feedback { margin: 10px 0; }
+
+.option:disabled { cursor: default; }
+.option.reveal-correct { border-color: var(--green); background: #14331f; }
+.option.reveal-correct .opt-key { color: #8ee6ad; }
+.option.reveal-wrong { border-color: var(--red); background: #371a17; }
+.option.reveal-wrong .opt-key { color: #ff9b8e; }
+.option.reveal-dim { opacity: .55; }
+.piege { display: block; margin-top: 6px; font-size: .82rem; color: #ffb4a8; }
+.option.reveal-dim .piege { color: #d8a49c; }
+
+.feedback { border-width: 1px; }
+.feedback.good { border-color: var(--green); }
+.feedback.bad { border-color: var(--red); }
+.feedback-head { font-size: 1.1rem; font-weight: 800; margin-bottom: 10px; }
+.feedback.good .feedback-head { color: #8ee6ad; }
+.feedback.bad .feedback-head { color: #ff9b8e; }
+.signal {
+  background: var(--panel-2); border-left: 3px solid var(--blue);
+  border-radius: 0 8px 8px 0; padding: 10px 12px; margin: 10px 0; font-size: .93rem;
+}
+.explication { margin: 12px 0; line-height: 1.6; }
+
+.radar-scores { display: grid; gap: 6px; margin: 14px 0 4px; }
+.radar-row { display: grid; grid-template-columns: 130px 1fr 34px; align-items: center; gap: 10px; font-size: .8rem; }
+.radar-label { color: var(--muted); white-space: nowrap; }
+.radar-track { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+.radar-track i { display: block; height: 100%; background: var(--orange); border-radius: 4px; }
+.radar-val { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .radar-row { grid-template-columns: 105px 1fr 34px; }
+}

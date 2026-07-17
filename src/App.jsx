@@ -2,10 +2,12 @@ import { useState } from 'react'
 import StartScreen from './components/StartScreen.jsx'
 import ExamScreen from './components/ExamScreen.jsx'
 import ResultsScreen from './components/ResultsScreen.jsx'
+import TrainingScreen from './components/TrainingScreen.jsx'
 import { buildExam, evaluate, EXAM } from './lib/exam.js'
 import defaultBank from './data/questions.json'
 
 export default function App() {
+  const [mode, setMode] = useState('training') // training | exam
   const [phase, setPhase] = useState('start') // start | exam | results
   const [bank, setBank] = useState(defaultBank)
   const [settings, setSettings] = useState({ count: 65, timed: true })
@@ -27,6 +29,14 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
+  function switchMode(m) {
+    if (m === mode) return
+    if (phase === 'exam' && !window.confirm('Quitter la simulation en cours ?')) return
+    setMode(m)
+    setPhase('start')
+    window.scrollTo(0, 0)
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -37,7 +47,26 @@ export default function App() {
         </div>
       </header>
 
-      {phase === 'start' && (
+      <nav className="tabs">
+        <button
+          type="button"
+          className={`tab ${mode === 'training' ? 'active' : ''}`}
+          onClick={() => switchMode('training')}
+        >
+          🧪 Entraînement
+        </button>
+        <button
+          type="button"
+          className={`tab ${mode === 'exam' ? 'active' : ''}`}
+          onClick={() => switchMode('exam')}
+        >
+          🎯 Simulation d'examen
+        </button>
+      </nav>
+
+      {mode === 'training' && <TrainingScreen />}
+
+      {mode === 'exam' && phase === 'start' && (
         <StartScreen
           bank={bank}
           setBank={setBank}
@@ -46,7 +75,7 @@ export default function App() {
         />
       )}
 
-      {phase === 'exam' && (
+      {mode === 'exam' && phase === 'exam' && (
         <ExamScreen
           exam={exam}
           timed={settings.timed}
@@ -56,7 +85,7 @@ export default function App() {
         />
       )}
 
-      {phase === 'results' && (
+      {mode === 'exam' && phase === 'results' && (
         <ResultsScreen
           result={result}
           onRestart={() => setPhase('start')}

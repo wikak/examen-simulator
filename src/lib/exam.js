@@ -37,13 +37,16 @@ export function shuffle(arr) {
   return a
 }
 
-// "C" -> ["C"];  "B, C" -> ["B","C"]
+// "C" -> ["C"];  "B, C" -> ["B","C"];  "BD" -> ["B","D"]
 export function parseLetters(answer) {
-  if (Array.isArray(answer)) return answer.map((s) => String(s).trim().toUpperCase())
-  return String(answer || '')
-    .split(/[\s,]+/)
-    .map((s) => s.trim().toUpperCase())
-    .filter(Boolean)
+  const tokens = Array.isArray(answer)
+    ? answer.map((s) => String(s).trim().toUpperCase())
+    : String(answer || '')
+        .split(/[\s,]+/)
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean)
+  // Concatenated letters ("BD") -> individual letters.
+  return tokens.flatMap((t) => (/^[A-F]{2,}$/.test(t) ? t.split('') : [t]))
 }
 
 export function isMultiAnswer(q) {
