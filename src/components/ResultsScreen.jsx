@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { domainClass, EXAM, formatTime, parseLetters } from '../lib/exam.js'
+import { EXAM, formatTime, parseLetters } from '../lib/exam.js'
+import { domainClass } from '../lib/certs.js'
 import RichText from './RichText.jsx'
 
 export default function ResultsScreen({ result, onRestart, onRetry }) {

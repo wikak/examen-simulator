@@ -1,4 +1,4 @@
-// AWS SAA-C03 exam parameters + scoring/evaluation helpers.
+// AWS Associate exam parameters (same format for SAA-C03 and MLA-C02) + scoring/evaluation helpers.
 
 export const EXAM = {
   PASS_SCORE: 720,      // scaled passing score
@@ -9,23 +9,6 @@ export const EXAM = {
   UNSCORED_QUESTIONS: 15, // ...the other 15 are unscored
   TIME_MINUTES: 130,    // real exam duration
   SECONDS_PER_QUESTION: 120, // 130 min / 65 q = 2 min per question
-}
-
-// Reference only (the breakdown is displayed; categories are NOT used to grade).
-export const DOMAINS = [
-  { name: 'Design Secure Architectures', weight: 30 },
-  { name: 'Design Resilient Architectures', weight: 26 },
-  { name: 'Design High-Performing Architectures', weight: 24 },
-  { name: 'Design Cost-Optimized Architectures', weight: 20 },
-]
-
-export function domainClass(domain) {
-  return {
-    'Design Secure Architectures': 'dom-secure',
-    'Design Resilient Architectures': 'dom-resilient',
-    'Design High-Performing Architectures': 'dom-perf',
-    'Design Cost-Optimized Architectures': 'dom-cost',
-  }[domain] || 'dom-default'
 }
 
 export function shuffle(arr) {
@@ -68,6 +51,7 @@ export function normalizeBank(raw) {
       question: q.question,
       options: q.options,
       answer: q.answer,
+      ...(q.domain ? { domain: q.domain } : {}),
     }
   })
 }

@@ -1,9 +1,6 @@
-// Sandbox training mode: enriched question bank, filters and localStorage progress.
+// Sandbox training mode: filters and localStorage progress (one storage key per certification).
 
-import enriched from '../data/resultat_enrichi_final.json'
 import { parseLetters, shuffle } from './exam.js'
-
-export const TRAINING_BANK = enriched
 
 export const THEMES = [
   { key: 'cout', label: '💰 Coût' },
@@ -26,27 +23,25 @@ export function dominantTheme(q) {
   return best
 }
 
-const STORAGE_KEY = 'aws-sandbox-progress-v1'
-
-export function loadProgress() {
+export function loadProgress(storageKey) {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}
+    return JSON.parse(localStorage.getItem(storageKey)) || {}
   } catch {
     return {}
   }
 }
 
-export function saveProgress(progress) {
+export function saveProgress(storageKey, progress) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+    localStorage.setItem(storageKey, JSON.stringify(progress))
   } catch {
     // private mode / quota: training still works, progress just isn't persisted
   }
 }
 
-export function clearProgress() {
+export function clearProgress(storageKey) {
   try {
-    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(storageKey)
   } catch {}
 }
 
@@ -94,18 +89,16 @@ export function buildTrainingSession(bank, progress, cfg) {
 
 /* ---------- Last played series (to replay it later) ---------- */
 
-const LAST_SESSION_KEY = 'aws-sandbox-last-session-v1'
-
-export function saveLastSession(questions) {
+export function saveLastSession(storageKey, questions) {
   try {
-    localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(questions.map((q) => q.id)))
+    localStorage.setItem(storageKey, JSON.stringify(questions.map((q) => q.id)))
   } catch {}
 }
 
 // Returns the questions of the last series, in the order they were played.
-export function loadLastSession(bank) {
+export function loadLastSession(storageKey, bank) {
   try {
-    const ids = JSON.parse(localStorage.getItem(LAST_SESSION_KEY))
+    const ids = JSON.parse(localStorage.getItem(storageKey))
     if (!Array.isArray(ids) || ids.length === 0) return null
     const byId = new Map(bank.map((q) => [q.id, q]))
     const list = ids.map((id) => byId.get(id)).filter(Boolean)

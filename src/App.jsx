@@ -1,18 +1,23 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import StartScreen from './components/StartScreen.jsx'
 import ExamScreen from './components/ExamScreen.jsx'
 import ResultsScreen from './components/ResultsScreen.jsx'
 import TrainingScreen from './components/TrainingScreen.jsx'
 import { buildExam, evaluate, EXAM } from './lib/exam.js'
-import defaultBank from './data/questions.json'
+import { CERTS, loadCert, saveCert } from './lib/certs.js'
 
 export default function App() {
+  const [cert, setCert] = useState(loadCert)
   const [mode, setMode] = useState('training') // training | exam
   const [phase, setPhase] = useState('start') // start | exam | results
-  const [bank, setBank] = useState(defaultBank)
+  const [bank, setBank] = useState(() => cert.examBank)
   const [settings, setSettings] = useState({ count: 65, timed: true })
   const [exam, setExam] = useState([])
   const [result, setResult] = useState(null)
+
+  useEffect(() => {
+    document.title = `AWS ${cert.code} — Exam Simulator`
+  }, [cert])
 
   function startExam(opts) {
     const cfg = { ...settings, ...opts }
@@ -37,13 +42,38 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
+  function switchCert(c) {
+    if (c.key === cert.key) return
+    if (mode === 'exam' && phase === 'exam' && !window.confirm('Quitter la simulation en cours ?')) return
+    saveCert(c)
+    setCert(c)
+    setBank(c.examBank)
+    setExam([])
+    setResult(null)
+    setPhase('start')
+    window.scrollTo(0, 0)
+  }
+
   return (
     <div className="app">
       <header className="topbar">
         <span className="logo">AWS</span>
-        <div>
-          <h1>Solutions Architect Associate (SAA-C03)</h1>
+        <div className="topbar-title">
+          <h1>{cert.title} ({cert.code})</h1>
           <p className="subtitle">Exam Simulator</p>
+        </div>
+        <div className="cert-switch" role="group" aria-label="Certification">
+          {CERTS.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              className={`cert-btn ${c.key === cert.key ? 'active' : ''}`}
+              aria-pressed={c.key === cert.key}
+              onClick={() => switchCert(c)}
+            >
+              {c.code}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -64,10 +94,12 @@ export default function App() {
         </button>
       </nav>
 
-      {mode === 'training' && <TrainingScreen />}
+      {mode === 'training' && <TrainingScreen key={cert.key} cert={cert} />}
 
       {mode === 'exam' && phase === 'start' && (
         <StartScreen
+          key={cert.key}
+          cert={cert}
           bank={bank}
           setBank={setBank}
           settings={settings}

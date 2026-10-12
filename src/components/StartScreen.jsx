@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
-import { DOMAINS, EXAM, normalizeBank } from '../lib/exam.js'
+import { EXAM, normalizeBank } from '../lib/exam.js'
+import { domainClass } from '../lib/certs.js'
 
 const COUNT_OPTIONS = [10, 20, 50, 65]
 
-export default function StartScreen({ bank, setBank, settings, onStart }) {
+export default function StartScreen({ cert, bank, setBank, settings, onStart }) {
   const [count, setCount] = useState(settings.count)
   const [timed, setTimed] = useState(settings.timed)
   const [error, setError] = useState('')
@@ -34,20 +35,21 @@ export default function StartScreen({ bank, setBank, settings, onStart }) {
   return (
     <main className="screen">
       <section className="card">
-        <h2>Format de l'examen</h2>
+        <h2>Format de l'examen {cert.code}</h2>
         <ul className="facts">
           <li><strong>{EXAM.TOTAL_QUESTIONS} questions</strong> — {EXAM.SCORED_QUESTIONS} comptabilisées + {EXAM.UNSCORED_QUESTIONS} non notées</li>
           <li><strong>Durée :</strong> {EXAM.TIME_MINUTES} minutes (~2 min/question)</li>
           <li><strong>Score :</strong> échelle {EXAM.MIN_SCORE}–{EXAM.MAX_SCORE}, réussite à <strong>{EXAM.PASS_SCORE}</strong></li>
-          <li><strong>Expérience recommandée :</strong> 1 an de pratique AWS</li>
+          <li><strong>Expérience recommandée :</strong> {cert.experience}</li>
+          {cert.note && <li className="muted small">ℹ️ {cert.note}</li>}
         </ul>
 
         <h3>Répartition par domaine <span className="muted">(indicatif — non utilisé pour la notation)</span></h3>
         <table className="domains">
           <tbody>
-            {DOMAINS.map((d) => (
+            {cert.domains.map((d) => (
               <tr key={d.name}>
-                <td>{d.name}</td>
+                <td><span className={`dom-dot ${domainClass(d.name)}`} />{d.name}</td>
                 <td className="weight">
                   <span className="bar" style={{ width: `${d.weight * 2.5}px` }} />
                   {d.weight}%

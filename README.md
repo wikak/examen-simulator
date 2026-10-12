@@ -1,6 +1,11 @@
-# AWS SAA-C03 — Exam Simulator (React)
+# AWS Exam Simulator (React)
 
-Simulateur d'examen **AWS Certified Solutions Architect – Associate (SAA-C03)**.
+Simulateur d'examen pour deux certifications, sélectionnables en haut de l'écran :
+
+- **AWS Certified Machine Learning Engineer – Associate (MLA-C02)** — banque `src/data/questions_mla_c02.json` (examen + entraînement)
+- **AWS Certified Solutions Architect – Associate (SAA-C03)** — banques `src/data/questions.json` (examen) et `src/data/resultat_enrichi_final.json` (entraînement)
+
+La progression d'entraînement est enregistrée séparément pour chaque certification.
 
 ## Démarrer
 
@@ -42,7 +47,8 @@ Format attendu (tableau) :
 ```
 
 - `answer` accepte une lettre (`"C"`) ou plusieurs (`"B, C"`) pour les questions « Choose two/three ».
-- Une banque par défaut de **885 questions** (extraites de `resultat_extraction.txt`) est déjà incluse dans `src/data/questions.json`.
+- Une banque de **885 questions** SAA-C03 (extraites de `resultat_extraction.txt`) est incluse dans `src/data/questions.json`, et une banque de **358 questions** MLA-C02 dans `src/data/questions_mla_c02.json`.
+- Le champ optionnel `domain` affiche un badge de domaine coloré.
 
 ## Notation
 

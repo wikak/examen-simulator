@@ -1036,38 +1036,6 @@
     "explication": "Amazon Managed Service for Apache Flink est concu nativement pour du traitement de flux avec fenetres temporelles (tumbling/sliding windows) en quasi temps-reel, entierement gere. Kinesis Data Firehose avec une transformation Lambda et un intervalle de buffering aligne sur 90 secondes permet aussi d'agreger avec tres peu d'operations a gerer. Les deux options evitent la gestion d'un cluster (EMR) ou un traitement par lots differe (SageMaker Processing planifie)."
   },
   {
-    "id": 34,
-    "question": "A travel company is developing a customer support application that uses Amazon Q Business to answer customer questions about travel packages. The company must ensure that responses never mention outdated or no-longer-available travel destinations. The filtering should happen before results are returned to users. Which solution best meets this requirement?",
-    "options": {
-      "A": "Configure Amazon Q Business blocked phrases to prevent responses that reference outdated or unavailable travel destinations",
-      "B": "Analyze the Amazon Q Business API responses using Amazon Comprehend and suppress any responses that mention outdated destinations",
-      "C": "Create an AWS Lambda function that post-processes Amazon Q Business responses and removes outdated destination references",
-      "D": "Configure an Amazon Kendra retriever to exclude documents related to outdated travel destinations from the indexed content"
-    },
-    "answer": "A",
-    "radar": {
-      "declencheurs": [
-        "responses never mention",
-        "filtering should happen before results are returned",
-        "Amazon Q Business"
-      ],
-      "signal": "Filtrage de contenu natif AVANT restitution -> fonctionnalite integree 'blocked phrases' de Amazon Q Business (guardrail natif)",
-      "pieges": {
-        "B": "Ajouter Comprehend en aval = composant supplementaire a construire/maintenir alors qu'un garde-fou natif existe deja",
-        "C": "Un Lambda de post-traitement custom duplique une fonctionnalite deja native a Q Business, plus d'effort de dev",
-        "D": "Exclure des documents de l'index Kendra reduit la source mais ne garantit pas que le LLM ne mentionne jamais ces destinations (connaissance parametrique, reformulations)"
-      },
-      "scores": {
-        "cout": 0,
-        "securite": 3,
-        "haute_dispo": 0,
-        "performance": 0,
-        "op_overhead": 5
-      }
-    },
-    "explication": "Amazon Q Business propose une fonctionnalite native de gouvernance des reponses ('blocked phrases') permettant de bloquer directement toute reponse contenant des termes ou sujets specifiques avant qu'elle ne soit renvoyee a l'utilisateur, sans avoir a construire un pipeline de filtrage externe."
-  },
-  {
     "id": 35,
     "question": "A team is building a binary churn prediction model using 30-day tabular customer features in Amazon SageMaker. They want a solution that provides a fast, easy-to-set-up baseline and is simple to interpret before moving on to more complex models. Which approach best meets these requirements?",
     "options": {
@@ -1197,38 +1165,6 @@
     "explication": "XGBoost est l'algorithme built-in SageMaker de reference pour les donnees tabulaires structurees et offre d'excellentes performances en classification binaire supervisee (comme la prediction de churn), ce qui en fait le choix le plus approprie parmi les options proposees, devant Linear Learner qui reste une alternative plus simple mais generalement moins performante sur ce type de probleme."
   },
   {
-    "id": 39,
-    "question": "You are a data scientist at a media company that processes large volumes of video and image data to generate personalized content recommendations. The dataset is stored in Amazon S3 and includes: Tens of millions of small image files. Several terabytes of high-resolution video files. Training jobs on Amazon SageMaker require low-latency, high-throughput access and must complete quickly to keep up with the dynamic content pipeline. Which approach is most appropriate for these requirements?",
-    "options": {
-      "A": "Use Fast File mode with Amazon S3 to stream small image files directly to training instances on demand, reducing training startup time",
-      "B": "Use Amazon FSx for Lustre to mount the entire dataset as a high-performance file system, providing consistently low-latency access for both images and videos",
-      "C": "Use Fast File mode with Amazon S3 for large video files and store small image files locally on the training instances to reduce latency",
-      "D": "Combine approaches: link small image files in FSx for Lustre and access large video files via Fast File mode from S3, leveraging the strengths of both"
-    },
-    "answer": "D",
-    "radar": {
-      "declencheurs": [
-        "tens of millions of small image files",
-        "several terabytes of high-resolution video",
-        "low-latency, high-throughput"
-      ],
-      "signal": "Deux profils de fichiers tres differents -> combiner FSx for Lustre (millions de petits fichiers) + S3 Fast File mode (gros fichiers volumineux)",
-      "pieges": {
-        "A": "Fast File mode seul est optimal pour de gros fichiers sequentiels, moins adapte a des millions de tres petits fichiers (overhead par requete S3)",
-        "B": "Monter tout le dataset (y compris plusieurs TB de video) sur FSx for Lustre est possible mais plus couteux/complexe que de laisser les gros fichiers en Fast File mode direct depuis S3",
-        "C": "Stocker les images localement sur les instances de training n'est pas scalable ni persistant, et perd le benefice d'un stockage partage"
-      },
-      "scores": {
-        "cout": 2,
-        "securite": 0,
-        "haute_dispo": 1,
-        "performance": 5,
-        "op_overhead": 3
-      }
-    },
-    "explication": "FSx for Lustre excelle sur l'acces a tres grand nombre de petits fichiers (cache haute performance lie a S3, evite l'overhead d'un GET S3 par fichier), tandis que S3 Fast File mode est optimal pour streamer efficacement de gros fichiers volumineux directement depuis S3. Combiner les deux approches selon le type de fichier permet d'obtenir un acces a faible latence et fort debit sur l'ensemble heterogene du dataset."
-  },
-  {
     "id": 40,
     "question": "A healthcare organization is running a predictive ML model in production using Amazon SageMaker. SageMaker Model Monitor is enabled to track data quality. After a recent model update, the data scientist notices that Model Monitor flags data quality issues. What is the correct way to address these data quality issues?",
     "options": {
@@ -1322,42 +1258,6 @@
       }
     },
     "explication": "Un VPC Endpoint (de type Gateway pour S3) permet d'acceder a Amazon S3 directement depuis un subnet prive via le reseau prive d'AWS, sans jamais transiter par une passerelle Internet ou un NAT gateway, ce qui est la seule option garantissant que les donnees ne traversent jamais l'Internet public."
-  },
-  {
-    "id": 43,
-    "question": "A regulated digital payments startup in North America needs to score card transactions for fraud in under 70 milliseconds during bursts of up to 180,000 requests per minute. The solution must: Protect highly sensitive user data. Maintain very high availability. Provide resilient, real-time inference at scale. Which AWS approach best satisfies these requirements?",
-    "options": {
-      "A": "Train and host models on Amazon SageMaker with managed auto scaling across multiple Availability Zones and protect the public interface using AWS Shield Advanced",
-      "B": "Deploy models on AWS Lambda with Amazon Cognito for user access, leveraging serverless architecture to handle bursts",
-      "C": "Train models using AWS Glue and deploy on Amazon ECS with manual scaling and AWS WAF protecting the service",
-      "D": "Use Amazon EC2 for both training and hosting with manual scaling and Amazon Inspector for vulnerability assessments",
-      "E": "Use Amazon EMR for distributed training and run inference on on-premises servers connected to AWS through a VPN"
-    },
-    "answer": "A",
-    "radar": {
-      "declencheurs": [
-        "under 70 milliseconds",
-        "180,000 requests per minute",
-        "highly sensitive user data",
-        "very high availability",
-        "resilient, real-time inference at scale"
-      ],
-      "signal": "Inference temps reel a tres forte echelle + tres haute dispo + donnees sensibles -> SageMaker managed + autoscaling multi-AZ + Shield Advanced",
-      "pieges": {
-        "B": "Lambda pour de l'inference ML a tres faible latence et fort volume est risque (cold starts, limites de duree/memoire), et Cognito gere l'auth utilisateur, pas la protection DDoS de l'inference",
-        "C": "Scaling manuel sur ECS ne repond pas assez vite a des pics soudains de 180k req/min ; WAF protege contre des attaques applicatives, pas contre l'indisponibilite en charge",
-        "D": "EC2 avec scaling manuel ne peut pas suivre des bursts imprevisibles, et Inspector fait de l'analyse de vulnerabilites, pas de la protection en disponibilite",
-        "E": "L'inference sur des serveurs on-premises via VPN ajoute de la latence reseau incompatible avec un objectif de moins de 70 ms"
-      },
-      "scores": {
-        "cout": 3,
-        "securite": 4,
-        "haute_dispo": 5,
-        "performance": 5,
-        "op_overhead": 3
-      }
-    },
-    "explication": "SageMaker avec autoscaling manage sur plusieurs zones de disponibilite repond a la fois a l'exigence de tres haute disponibilite et a la capacite d'absorber des pics de charge en temps reel avec une faible latence. AWS Shield Advanced protege l'interface publique contre les attaques DDoS, ce qui est crucial pour un service de paiement expose et manipulant des donnees sensibles a fort enjeu de resilience."
   },
   {
     "id": 44,
@@ -3188,38 +3088,6 @@
     "explication": "Construire une image Docker personnalisee contenant les librairies requises, la stocker dans Amazon ECR et la referencer directement dans les jobs de processing, de training et dans les pipelines SageMaker est l'approche standard et reutilisable : l'image est construite une seule fois puis utilisee partout, ce qui minimise l'effort d'implementation par rapport a des installations manuelles repetees ou des contournements via EC2/Lambda."
   },
   {
-    "id": 102,
-    "question": "A company wants to implement a predictive maintenance system for its IoT devices by identifying anomalies in sensor data. The solution must automatically learn patterns from historical device data and detect abnormal behavior in real time without requiring manual model management. Which AWS service is the most suitable choice?",
-    "options": {
-      "A": "Amazon SageMaker",
-      "B": "Amazon Lookout for Equipment",
-      "C": "AWS IoT Analytics",
-      "D": "Amazon Comprehend"
-    },
-    "answer": "B",
-    "radar": {
-      "declencheurs": [
-        "predictive maintenance",
-        "IoT devices",
-        "without requiring manual model management"
-      ],
-      "signal": "Maintenance predictive sur capteurs industriels + aucune gestion de modele manuelle -> Amazon Lookout for Equipment (service manage dedie)",
-      "pieges": {
-        "A": "SageMaker est une plateforme generaliste qui necessite de construire et gerer soi-meme le modele, contraire a 'without manual model management'",
-        "C": "IoT Analytics traite/analyse des donnees IoT mais ne fournit pas nativement de detection d'anomalies de maintenance predictive prete a l'emploi",
-        "D": "Comprehend est un service de NLP sur du texte, sans rapport avec des donnees de capteurs IoT"
-      },
-      "scores": {
-        "cout": 1,
-        "securite": 0,
-        "haute_dispo": 0,
-        "performance": 2,
-        "op_overhead": 5
-      }
-    },
-    "explication": "Amazon Lookout for Equipment est un service manage specifiquement concu pour la maintenance predictive industrielle : il apprend automatiquement les patterns normaux a partir des donnees historiques des capteurs et detecte les comportements anormaux en temps reel, sans que l'equipe n'ait a construire ou gerer elle-meme un modele ML, contrairement a SageMaker qui resterait une solution generaliste 'do-it-yourself'."
-  },
-  {
     "id": 103,
     "question": "A company currently runs a machine learning model for real-time predictions using an Amazon SageMaker endpoint. The company plans to release an updated model but must first evaluate its performance against the existing model before directing all production traffic to it. Which approach will satisfy this requirement while requiring the least operational overhead?",
     "options": {
@@ -3662,37 +3530,6 @@
       }
     },
     "explication": "Le AWS Glue Data Catalog est le metastore centralise qui stocke les schemas et metadonnees de multiples sources de donnees, permettant une decouverte et une gestion coherente des donnees utilisees pour preparer des jeux d'entrainement ML de meilleure qualite, alors que les Crawlers ne font qu'alimenter ce catalogue automatiquement."
-  },
-  {
-    "id": 117,
-    "question": "A company is deploying a machine learning model on an edge device with limited memory and compute resources. Which two techniques can reduce the model size while maintaining similar performance? (Choose two)",
-    "options": {
-      "A": "Prune unnecessary neurons or connections in the model to eliminate redundancy.",
-      "B": "Convert the model's weights to lower-precision data types (e.g., float32 → float16).",
-      "C": "Increase the number of layers in the neural network to improve capacity.",
-      "D": "Add more features to the training data to boost accuracy."
-    },
-    "answer": "A, B",
-    "radar": {
-      "declencheurs": [
-        "edge device with limited memory and compute",
-        "reduce the model size while maintaining similar performance",
-        "choose two"
-      ],
-      "signal": "Reduire la taille du modele pour l'edge -> pruning (elaguer les connexions redondantes) + quantization (precision reduite des poids)",
-      "pieges": {
-        "C": "Ajouter des couches AUGMENTE la taille du modele, l'oppose de l'objectif",
-        "D": "Ajouter des features au dataset d'entrainement n'a pas d'impact direct sur la taille du modele deploye"
-      },
-      "scores": {
-        "cout": 1,
-        "securite": 0,
-        "haute_dispo": 0,
-        "performance": 2,
-        "op_overhead": 2
-      }
-    },
-    "explication": "Le pruning elimine les neurones/connexions peu utiles du reseau pour reduire sa taille sans trop degrader la performance, tandis que la quantization convertit les poids vers des types de donnees de precision inferieure (ex: float16 voire int8), reduisant significativement l'empreinte memoire et les besoins de calcul, ce qui est essentiel pour un deploiement sur un device edge aux ressources limitees."
   },
   {
     "id": 118,
@@ -4990,39 +4827,6 @@
     "explication": "Comme dans les cas similaires, convertir vers Apache Parquet (format colonnaire) permet aux moteurs de requete de ne lire que les colonnes reellement utilisees (5 sur 150), reduisant drastiquement le volume de donnees scannees et donc le temps d'execution des requetes, contrairement aux formats ligne comme XML, JSON ou CSV compresse."
   },
   {
-    "id": 159,
-    "question": "A news agency runs a document retrieval system that allows journalists to search for articles using natural language queries. Previously, the system relied on a vector database with article embeddings. The agency has now moved all archived articles to an Amazon S3 bucket and needs an AWS-native solution to provide semantic search over the articles. Which option provides the most efficient implementation?",
-    "options": {
-      "A": "Deploy a SageMaker endpoint with a fine-tuned language model and manually integrate it with S3 for retrieval.",
-      "B": "Use Amazon Kendra to index the articles stored in the S3 bucket and enable semantic search with natural language queries.",
-      "C": "Use Amazon Comprehend to extract entities and key phrases and build a custom semantic search engine.",
-      "D": "Use AWS Glue to catalog the S3 data and query it with Amazon Athena for semantic queries."
-    },
-    "answer": "B",
-    "radar": {
-      "declencheurs": [
-        "semantic search",
-        "natural language queries",
-        "AWS-native solution",
-        "most efficient implementation"
-      ],
-      "signal": "Recherche semantique en langage naturel sur des documents S3, solution AWS-native prete a l'emploi -> Amazon Kendra",
-      "pieges": {
-        "A": "Deployer et integrer manuellement un modele de langage custom demande un developpement et une maintenance importants",
-        "C": "Comprehend extrait entites/phrases-cles mais ne fournit pas nativement un moteur de recherche semantique complet, il faudrait tout construire soi-meme",
-        "D": "Athena execute des requetes SQL structurees, ce n'est pas un moteur de recherche semantique en langage naturel"
-      },
-      "scores": {
-        "cout": 2,
-        "securite": 0,
-        "haute_dispo": 0,
-        "performance": 2,
-        "op_overhead": 5
-      }
-    },
-    "explication": "Amazon Kendra est le service de recherche AWS-natif concu pour indexer des documents (y compris depuis S3) et repondre a des requetes en langage naturel avec une comprehension semantique, offrant une implementation prete a l'emploi bien plus efficace que de construire ou d'integrer manuellement une solution de recherche vectorielle/semantique custom."
-  },
-  {
     "id": 160,
     "question": "A company uses a machine learning model for real-time fraud detection. Recently, the model's accuracy has started to decrease over time. What is the most likely reason for model drift in this scenario?",
     "options": {
@@ -5400,37 +5204,6 @@
     "explication": "La couleur est une variable categorique NOMINALE (sans relation d'ordre naturelle) : le one-hot encoding la convertit en vecteurs binaires independants, evitant d'introduire une fausse relation d'ordre ou de magnitude qu'un label encoding (entiers arbitraires) creerait involontairement, ce qui est problematique pour un reseau de neurones."
   },
   {
-    "id": 172,
-    "question": "A company is building a product recommendation app that queries Amazon Q Business via API. The company wants to ensure that responses never mention its main competitor. Which approach will enforce this requirement?",
-    "options": {
-      "A": "Use document attribute boosting in Amazon Q Business to deprioritize the competitor's name.",
-      "B": "Configure the competitor's name as a blocked phrase in Amazon Q Business.",
-      "C": "Set up an Amazon Kendra retriever to build indexes that omit the competitor's name.",
-      "D": "Configure an Amazon Q Business retriever to exclude the competitor's name."
-    },
-    "answer": "B",
-    "radar": {
-      "declencheurs": [
-        "responses never mention",
-        "Amazon Q Business"
-      ],
-      "signal": "Meme pattern que Q34 : garde-fou natif pour bloquer un terme dans les reponses -> blocked phrases",
-      "pieges": {
-        "A": "Le 'deprioritize' via boosting reduit juste la pertinence, sans garantir une exclusion totale ('never mention')",
-        "C": "Omettre un terme de l'INDEX ne garantit pas que le LLM ne le mentionne jamais dans une reponse generee (connaissance parametrique, reformulation)",
-        "D": "Un retriever gere la recherche documentaire, ce n'est pas le mecanisme de filtrage de contenu genere par le modele"
-      },
-      "scores": {
-        "cout": 0,
-        "securite": 3,
-        "haute_dispo": 0,
-        "performance": 0,
-        "op_overhead": 5
-      }
-    },
-    "explication": "Comme pour un scenario equivalent, la fonctionnalite native 'blocked phrases' d'Amazon Q Business garantit qu'aucune reponse contenant le terme bloque (ici, le nom du concurrent) n'est jamais renvoyee a l'utilisateur, ce qui est la seule option assurant une exclusion absolue plutot qu'une simple deprioritisation ou une omission partielle de l'index."
-  },
-  {
     "id": 173,
     "question": "A healthcare company wants to analyze patient records and self-reported text in English to provide treatment recommendations. The company seeks a solution that extracts insights from the text with minimal development effort. Which approach should the company use?",
     "options": {
@@ -5461,38 +5234,6 @@
       }
     },
     "explication": "Amazon Comprehend Medical est un service manage et pretrained specifiquement pour extraire des entites medicales (conditions, medicaments, dosages...) et des insights depuis du texte clinique en langage naturel via une simple API, sans aucun entrainement de modele requis, ce qui minimise l'effort de developpement par rapport a construire un modele seq2seq ou RNN custom."
-  },
-  {
-    "id": 174,
-    "question": "A startup company needs to score credit card transactions for fraud in real-time under 70 ms per request, handling bursts of up to 180,000 requests per minute. The system must protect sensitive user data and maintain high availability. Which AWS solution best meets these requirements?",
-    "options": {
-      "A": "Use Amazon EC2 for both training and hosting with manual scaling, and run Amazon Inspector for security checks.",
-      "B": "Deploy the model on AWS Lambda with Amazon Cognito for user access, relying on serverless scaling to handle transaction bursts.",
-      "C": "Train the model using AWS Glue and deploy it on Amazon ECS with manual scaling, protecting the service via AWS WAF.",
-      "D": "Train and deploy the model on Amazon SageMaker with managed auto-scaling across multiple Availability Zones, and protect the endpoint with AWS Shield Advanced."
-    },
-    "answer": "D",
-    "radar": {
-      "declencheurs": [
-        "under 70 ms",
-        "180,000 requests per minute",
-        "protect sensitive user data and maintain high availability"
-      ],
-      "signal": "Meme pattern que Q43 : inference temps reel a forte echelle + haute dispo + donnees sensibles -> SageMaker managed autoscaling multi-AZ + Shield Advanced",
-      "pieges": {
-        "A": "Scaling MANUEL sur EC2 ne peut pas suivre des bursts imprevisibles, et Inspector fait de l'analyse de vulnerabilites, pas de la protection de disponibilite",
-        "B": "Lambda pour de l'inference ML a tres fort volume est risque (cold starts/limites), et Cognito gere l'auth utilisateur, pas la protection DDoS du service",
-        "C": "Scaling manuel sur ECS ne reagit pas assez vite aux pics soudains, et WAF protege contre des attaques applicatives, pas contre l'indisponibilite en charge"
-      },
-      "scores": {
-        "cout": 3,
-        "securite": 4,
-        "haute_dispo": 5,
-        "performance": 5,
-        "op_overhead": 3
-      }
-    },
-    "explication": "Comme pour un scenario equivalent, SageMaker avec autoscaling manage sur plusieurs zones de disponibilite absorbe les pics de charge en temps reel avec une faible latence et une haute disponibilite, tandis qu'AWS Shield Advanced protege l'endpoint public contre les attaques DDoS, ce qui est crucial pour un service de paiement sensible et a fort enjeu de resilience."
   },
   {
     "id": 175,
@@ -5963,69 +5704,6 @@
       }
     },
     "explication": "Le Shadow Testing envoie une copie des requetes de production vers le nouveau modele pour evaluation, tandis que le modele de production actuel continue de repondre exclusivement aux utilisateurs, ce qui correspond exactement au besoin decrit."
-  },
-  {
-    "id": 190,
-    "question": "A computer vision team is training a deep neural network using 32 TB of image data. The training is distributed across 24 GPU-optimized Amazon EC2 instances, and each worker must simultaneously read from and write to the same shared directory structure. The team needs a scalable, high-throughput shared storage solution that supports concurrent access from multiple instances with minimal operational overhead. Which AWS storage service should be used for the shared training data layer?",
-    "options": {
-      "A": "Provision Amazon EBS volumes and attach one volume to each worker instance for local storage.",
-      "B": "Use Amazon S3 as the training data store and rely on local caching on each node.",
-      "C": "Preprocess the data using AWS Glue and store the results in Amazon RDS for workers to read during training.",
-      "D": "Use Amazon EFS and mount it as a shared file system accessible by all training instances."
-    },
-    "answer": "D",
-    "radar": {
-      "declencheurs": [
-        "simultaneously read from and write to the same shared directory structure",
-        "concurrent access from multiple instances"
-      ],
-      "signal": "Systeme de fichiers PARTAGE avec acces concurrent en lecture/ecriture depuis 24 instances -> Amazon EFS (NFS partage, POSIX)",
-      "pieges": {
-        "A": "Un volume EBS est attache a UNE SEULE instance a la fois, il ne peut pas etre partage nativement entre 24 workers",
-        "B": "S3 avec cache local par noeud ne fournit pas un vrai systeme de fichiers partage coherent en ecriture concurrente",
-        "C": "RDS est une base de donnees relationnelle, pas un stockage de fichiers adapte a des donnees d'entrainement volumineuses"
-      },
-      "scores": {
-        "cout": 2,
-        "securite": 0,
-        "haute_dispo": 3,
-        "performance": 2,
-        "op_overhead": 4
-      }
-    },
-    "explication": "Amazon EFS est un systeme de fichiers reseau (NFS) manage qui peut etre monte simultanement par de multiples instances EC2, offrant un acces concurrent en lecture/ecriture a une structure de repertoires partagee avec un minimum d'administration, contrairement a EBS (attache a une seule instance) ou RDS (base de donnees, pas un filesystem)."
-  },
-  {
-    "id": 191,
-    "question": "A research organization is training a machine learning model in Amazon SageMaker using a dataset stored in Amazon S3. The dataset contains millions of files, each several megabytes in size. The current training job is slower than expected. The team wants to quickly improve training performance with minimal changes to the existing architecture. Which solution will most effectively improve training performance?",
-    "options": {
-      "A": "Enable S3 Transfer Acceleration and update the training job configuration to use the accelerated data transfer.",
-      "B": "Create an Amazon EFS file system, connect it to the existing S3 bucket, and configure the training job to read data from the file system.",
-      "C": "Configure an Amazon S3 access point and update the training job to read data through the access point.",
-      "D": "Deploy an Amazon FSx for Lustre file system linked to the S3 bucket and configure the training job to read data from the file system."
-    },
-    "answer": "D",
-    "radar": {
-      "declencheurs": [
-        "millions of files",
-        "slower than expected",
-        "minimal changes to the existing architecture"
-      ],
-      "signal": "Entrainement lent sur des millions de fichiers S3, changement minimal -> FSx for Lustre lie a S3 (cache haute performance transparent)",
-      "pieges": {
-        "A": "S3 Transfer Acceleration optimise les transferts sur de LONGUES distances geographiques, pas la lecture repetee intra-region pour du training",
-        "B": "'Connecter' EFS a un bucket S3 existant n'est pas un mecanisme natif direct comme le lien FSx for Lustre <-> S3",
-        "C": "Un S3 access point gere l'acces/la gouvernance, il n'ameliore pas le debit de lecture pour des millions de petits fichiers"
-      },
-      "scores": {
-        "cout": 2,
-        "securite": 0,
-        "haute_dispo": 0,
-        "performance": 5,
-        "op_overhead": 2
-      }
-    },
-    "explication": "Amazon FSx for Lustre peut etre lie directement a un bucket S3 existant et chargeant les objets a la demande (lazy loading) dans un systeme de fichiers haute performance, ce qui accelere significativement la lecture repetee de millions de fichiers pendant l'entrainement, avec un changement minimal puisqu'il suffit de pointer le training job vers ce nouveau filesystem."
   },
   {
     "id": 192,
@@ -6757,39 +6435,6 @@
     "explication": "Comme pour un scenario equivalent, la defense-in-depth combine plusieurs controles independants (validation des entrees, IAM, monitoring continu) pour qu'une seule faille ne compromette pas l'ensemble du systeme, contrairement a une protection reposant sur une seule mesure isolee."
   },
   {
-    "id": 215,
-    "question": "When using Amazon Lookout for Equipment, you are training models across different machine types. Which data preparation approach will maximize model accuracy?",
-    "options": {
-      "A": "Add a machine_type feature and train one global model",
-      "B": "Merge all machines into one dataset",
-      "C": "Randomly mix records across machines",
-      "D": "Create separate datasets for each equipment type",
-      "E": "Apply identical normalization to all machines"
-    },
-    "answer": "D",
-    "radar": {
-      "declencheurs": [
-        "different machine types",
-        "maximize model accuracy"
-      ],
-      "signal": "Comportements normaux tres differents selon le type de machine -> entrainer un modele DEDIE par type d'equipement (pas un modele global melange)",
-      "pieges": {
-        "A": "Un modele global, meme avec une feature machine_type, dilue les patterns specifiques a chaque type de machine",
-        "B": "Fusionner toutes les machines melange des signatures de fonctionnement tres differentes, degradant la detection d'anomalies fines",
-        "C": "Melanger aleatoirement les records aggrave encore la perte de specificite par type de machine",
-        "E": "Une normalisation identique ignore que differents types de machines ont des plages de valeurs normales tres differentes"
-      },
-      "scores": {
-        "cout": 2,
-        "securite": 0,
-        "haute_dispo": 0,
-        "performance": 4,
-        "op_overhead": 2
-      }
-    },
-    "explication": "Amazon Lookout for Equipment recommande d'entrainer un modele distinct par type d'equipement/actif, car chaque type de machine a des patterns de fonctionnement normal tres differents ; melanger les types dans un modele global dilue ces signatures specifiques et degrade la precision de detection d'anomalies."
-  },
-  {
     "id": 216,
     "question": "Which features of AWS Cost Explorer help you analyze Amazon SageMaker costs and predict future spending? (Choose two)",
     "options": {
@@ -7335,37 +6980,6 @@
       }
     },
     "explication": "L'Asynchronous Inference de SageMaker est concu pour les requetes a payload volumineux (jusqu'a 1 Go) et a temps de traitement long (jusqu'a une heure). Il met les requetes en file d'attente, ecrit les resultats dans S3 et peut descendre a zero instance entre les pics, tout en restant un service entierement gere : c'est l'option qui repond aux contraintes avec le moins d'administration."
-  },
-  {
-    "id": 233,
-    "question": "A company is deploying machine learning models to edge devices and needs a service that optimizes models for better speed and resource efficiency. Which SageMaker service should be used?",
-    "options": {
-      "A": "SageMaker Ground Truth",
-      "B": "SageMaker Neo",
-      "C": "SageMaker Clarify",
-      "D": "SageMaker Data Wrangler"
-    },
-    "answer": "B",
-    "radar": {
-      "declencheurs": [
-        "deploying machine learning models to edge devices",
-        "optimizes models for better speed and resource efficiency"
-      ],
-      "signal": "Optimisation / compilation d'un modele pour l'edge -> SageMaker Neo",
-      "pieges": {
-        "A": "SageMaker Ground Truth sert a etiqueter des donnees d'entrainement, pas a optimiser des modeles",
-        "C": "SageMaker Clarify analyse les biais et l'explicabilite, sans rapport avec l'optimisation pour l'edge",
-        "D": "SageMaker Data Wrangler prepare les donnees, il n'optimise pas les modeles"
-      },
-      "scores": {
-        "cout": 1,
-        "securite": 0,
-        "haute_dispo": 0,
-        "performance": 3,
-        "op_overhead": 3
-      }
-    },
-    "explication": "SageMaker Neo compile les modeles entraines pour une execution optimisee sur une cible materielle donnee (processeurs ARM, GPU, accelerateurs edge). Il ameliore la vitesse d'inference et reduit l'empreinte memoire sans perte de precision, ce qui en fait le service adapte au deploiement sur appareils edge."
   },
   {
     "id": 234,
@@ -10006,6 +9620,2298 @@
     "explication": "AWS Budgets permet de creer un budget de cout mensuel filtre sur le service Amazon Bedrock, avec des alertes sur le cout reel ou previsionnel (forecasted) a un seuil donne, envoyees par email ou SNS. Des budget actions peuvent meme appliquer automatiquement une policy IAM restrictive si le seuil est depasse.",
     "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
     "skill": "4.2.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 309,
+    "question": "A hospital needs 400,000 chest X-ray images labeled for a classification model. The images contain protected health information and must be labeled only by the hospital's own radiologists. Labeling is expensive, so the hospital wants to minimize the number of images that radiologists must label manually. Which combination of Amazon SageMaker Ground Truth features meets these requirements? (Choose two.)",
+    "options": {
+      "A": "Use the Amazon Mechanical Turk public workforce",
+      "B": "Use a private workforce made up of the hospital's radiologists",
+      "C": "Use a vendor workforce from AWS Marketplace",
+      "D": "Enable automated data labeling, which uses active learning to label the images that the model can label with high confidence",
+      "E": "Export the images to Amazon Rekognition and use its labels as ground truth"
+    },
+    "answer": "B, D",
+    "radar": {
+      "declencheurs": [
+        "protected health information",
+        "own radiologists only",
+        "minimize manual labeling",
+        "400,000 images"
+      ],
+      "signal": "Donnees confidentielles -> private workforce ; reduire le volume etiquete a la main -> automated data labeling (active learning)",
+      "pieges": {
+        "A": "Mechanical Turk = travailleurs publics, interdit pour des donnees de sante",
+        "C": "Un vendor tiers n'est pas compose des radiologues de l'hopital",
+        "E": "Les labels generiques de Rekognition ne sont pas des diagnostics medicaux fiables"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Une private workforce limite l'acces aux images aux employes designes (ici les radiologues), ce qui respecte la confidentialite. L'automated data labeling entraine un modele au fil de l'eau : il etiquette lui-meme les images ou sa confiance est elevee et n'envoie aux humains que les cas difficiles, ce qui reduit fortement le cout sur un gros volume.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 310,
+    "question": "A company already streams clickstream events through an Amazon MSK cluster. The ML team wants these events stored in Amazon S3 as Apache Parquet files, partitioned by date, so that they can be used for model training. The team wants the solution with the LEAST operational overhead. What should the ML engineer do?",
+    "options": {
+      "A": "Write a Kafka consumer application on Amazon EC2 that converts the events to Parquet and uploads them to S3",
+      "B": "Create an Amazon Data Firehose stream with the MSK cluster as the source, enable record format conversion to Parquet with an AWS Glue Data Catalog table schema, and set S3 as the destination with a date-based prefix",
+      "C": "Use an AWS Glue crawler on the MSK topic",
+      "D": "Replace Amazon MSK with Amazon Kinesis Data Streams"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "already Amazon MSK",
+        "store in S3 as Parquet",
+        "partitioned by date",
+        "least operational overhead"
+      ],
+      "signal": "MSK -> S3 en Parquet sans code -> Firehose avec source MSK + record format conversion (schema Glue) + prefixe date",
+      "pieges": {
+        "A": "Un consumer custom sur EC2 = code, scaling et disponibilite a gerer",
+        "C": "Un crawler Glue catalogue des donnees deja stockees, il ne consomme pas un topic Kafka",
+        "D": "Migrer toute l'ingestion existante est un effort disproportionne"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Amazon Data Firehose accepte un cluster MSK comme source. Il peut convertir les enregistrements JSON en Parquet ou ORC grace a un schema stocke dans le Glue Data Catalog, puis les ecrire dans S3 avec des prefixes dynamiques (par exemple year=/month=/day=). Le tout est gere : aucun consumer a ecrire ou a operer.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 311,
+    "question": "A payment company needs a real-time feature, 'average transaction amount per card over a sliding 10-minute window updated every 30 seconds', computed from an Amazon Kinesis data stream. The computation must be stateful, must handle late-arriving events, and must provide exactly-once processing. Which service should the ML engineer use?",
+    "options": {
+      "A": "AWS Lambda with a Kinesis event source mapping and tumbling windows",
+      "B": "Amazon Data Firehose with a Lambda transformation",
+      "C": "Amazon Managed Service for Apache Flink",
+      "D": "An AWS Glue batch job scheduled every 10 minutes"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "sliding window",
+        "stateful",
+        "late-arriving events",
+        "exactly-once"
+      ],
+      "signal": "Fenetres glissantes + etat + evenements en retard (watermarks) + exactly-once -> Managed Service for Apache Flink",
+      "pieges": {
+        "A": "Les fenetres Lambda sont des tumbling windows (sans chevauchement), sans gestion avancee des evenements en retard",
+        "B": "La transformation Firehose est sans etat, enregistrement par enregistrement",
+        "D": "Un batch toutes les 10 minutes n'est pas temps reel et ne fait pas de fenetre glissante toutes les 30 secondes"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Apache Flink est concu pour le traitement de flux avec etat : fenetres glissantes (sliding/hopping), event time avec watermarks pour les evenements en retard, et checkpoints pour la semantique exactly-once. Le service gere fait tourner l'application sans cluster a administrer. Lambda ne propose que des tumbling windows de 15 minutes au plus.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 312,
+    "question": "Data scientists run Amazon Athena queries on a 40 TB dataset of CSV files in Amazon S3 to build training sets. Each query selects 6 of the 180 columns and filters on a single month of data. Queries are slow and expensive. Which changes will MOST reduce query cost and time? (Choose two.)",
+    "options": {
+      "A": "Convert the data to Apache Parquet",
+      "B": "Compress the CSV files with GZIP and keep the same layout",
+      "C": "Partition the data in S3 by year and month and register the partitions in the AWS Glue Data Catalog",
+      "D": "Move the data to S3 Standard-Infrequent Access",
+      "E": "Split the data into many 1 KB files to increase parallelism"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "Athena",
+        "6 of 180 columns",
+        "filter on one month",
+        "slow and expensive"
+      ],
+      "signal": "Peu de colonnes lues -> format colonnaire (Parquet) ; filtre temporel -> partitionnement (partition pruning)",
+      "pieges": {
+        "B": "GZIP reduit les octets lus, mais Athena doit toujours lire toutes les colonnes et tous les mois",
+        "D": "S3-IA reduit le cout de stockage mais ajoute des frais de recuperation et n'accelere rien",
+        "E": "De tres petits fichiers degradent les performances (overhead d'ouverture de fichiers)"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Athena facture au volume scanne. Parquet est colonnaire et compresse : seules les 6 colonnes utiles sont lues. Le partitionnement par annee et mois permet le partition pruning : seul le dossier du mois filtre est parcouru. Combinees, ces deux optimisations reduisent souvent le volume scanne de plus de 95%.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 313,
+    "question": "A computer vision training job on Amazon SageMaker AI reads 12 million small JPEG images (about 50 KB each) from Amazon S3 in File mode. The job spends most of its time downloading data before training starts, and GPU utilization stays low. Which actions will improve data loading performance? (Choose two.)",
+    "options": {
+      "A": "Pack the images into larger shard files (for example, RecordIO, TFRecord, or WebDataset tar shards of 100 MB to 1 GB)",
+      "B": "Use a larger GPU instance type",
+      "C": "Use FastFile mode so that the job streams the data from S3 instead of downloading the full dataset before training",
+      "D": "Store the images in Amazon S3 Glacier Instant Retrieval",
+      "E": "Increase the number of training epochs"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "millions of small files",
+        "File mode downloads first",
+        "low GPU utilization"
+      ],
+      "signal": "Goulot d'E/S sur des petits fichiers -> regrouper en shards volumineux + streaming (FastFile/Pipe) au lieu d'un telechargement prealable",
+      "pieges": {
+        "B": "Un GPU plus puissant attendra encore plus les donnees : le goulot est l'E/S, pas le calcul",
+        "D": "Glacier IR est une classe d'archivage, plus chere en lecture et sans gain de debit",
+        "E": "Plus d'epoques allonge l'entrainement sans regler le chargement"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Chaque requete S3 a une latence fixe : lire 12 millions de petits objets coute bien plus que lire quelques milliers de gros fichiers. Regrouper les images en shards augmente le debit effectif. FastFile mode expose les objets S3 comme des fichiers locaux et les lit en streaming, ce qui permet de demarrer l'entrainement sans attendre le telechargement complet.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 314,
+    "question": "An ML engineer must build a nightly training dataset by joining customer profiles stored in Amazon RDS for MySQL with 3 TB of purchase history stored as Parquet files in Amazon S3. The output must be written back to S3. The solution must be serverless and must scale to the data volume. What should the engineer do?",
+    "options": {
+      "A": "Create an AWS Glue ETL job that reads RDS through a JDBC connection and S3 through the Glue Data Catalog, joins the data with Apache Spark, and writes Parquet to S3",
+      "B": "Write an AWS Lambda function that queries RDS and S3 and joins the data in memory",
+      "C": "Export RDS to CSV manually every night and join the files in a Jupyter notebook",
+      "D": "Load the 3 TB of purchase history into the RDS instance and join the tables with SQL"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "join RDS and S3",
+        "3 TB",
+        "nightly",
+        "serverless",
+        "scale"
+      ],
+      "signal": "Fusion de sources heterogenes a grande echelle en serverless -> AWS Glue ETL (Spark) avec connexion JDBC + Data Catalog",
+      "pieges": {
+        "B": "Lambda est limitee a 15 minutes et 10 Go de memoire : impossible de joindre 3 To en memoire",
+        "C": "Un processus manuel dans un notebook n'est ni automatise ni scalable",
+        "D": "Charger 3 To dans RDS surcharge la base transactionnelle et ne la rend pas adaptee aux jointures analytiques"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 4,
+        "op_overhead": 5
+      }
+    },
+    "explication": "AWS Glue execute des jobs Spark serverless qui peuvent lire une base relationnelle via une connexion JDBC (dans le VPC) et des donnees S3 via le Data Catalog, puis distribuer la jointure sur plusieurs workers. Le resultat est ecrit en Parquet dans S3, et le job peut etre planifie chaque nuit avec un trigger Glue ou EventBridge.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 315,
+    "question": "An ML engineer trains a model to forecast next-week product demand from 3 years of daily sales data. The model shows 4% error on the test set but 25% error in production. The engineer used a random 80/20 split of all rows. What is the MOST likely cause, and how should the engineer fix it?",
+    "options": {
+      "A": "The model is underfitting; add more layers",
+      "B": "The test set is too small; use a 50/50 random split",
+      "C": "The data is imbalanced; apply SMOTE",
+      "D": "The random split leaks future information into training; use a time-based split in which the test set contains only dates after the training period"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "time series forecast",
+        "random split",
+        "good test score but bad production"
+      ],
+      "signal": "Series temporelles + split aleatoire -> fuite de donnees du futur ; utiliser un split chronologique",
+      "pieges": {
+        "A": "Une erreur de test de 4% n'indique pas un underfitting : c'est la validation qui est faussee",
+        "B": "Un autre ratio aleatoire garde la meme fuite temporelle",
+        "C": "SMOTE s'applique a la classification desequilibree, pas a une prevision de demande"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 1
+      }
+    },
+    "explication": "Avec un split aleatoire, des jours posterieurs aux jours de test se retrouvent dans l'entrainement : le modele 'voit le futur', et l'evaluation est optimiste. Pour des donnees temporelles, il faut entrainer sur le passe et tester sur une periode strictement posterieure (ou faire une validation glissante) afin de reproduire les conditions de production.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 316,
+    "question": "Before training a loan approval model, a bank must check whether the proportion of positive labels (approved) in the historical data differs significantly between applicants of different age groups. The check must run as part of an automated pipeline. What should the ML engineer use?",
+    "options": {
+      "A": "Amazon SageMaker Clarify pre-training bias metrics, such as Difference in Proportions of Labels (DPL), computed in a processing job",
+      "B": "SageMaker Model Monitor model quality monitoring",
+      "C": "SHAP values computed after training",
+      "D": "Amazon Macie sensitive data discovery"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "before training",
+        "proportion of positive labels differs between groups",
+        "automated pipeline"
+      ],
+      "signal": "Biais dans les donnees avant entrainement -> Clarify pre-training bias (DPL, CI) dans un processing job/pipeline",
+      "pieges": {
+        "B": "Model Monitor model quality surveille la precision d'un modele deja deploye",
+        "C": "SHAP explique les predictions d'un modele entraine, pas la distribution des labels dans les donnees",
+        "D": "Macie detecte des donnees sensibles, il ne mesure pas de biais"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 2,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 4
+      }
+    },
+    "explication": "SageMaker Clarify calcule des metriques de biais avant entrainement. Class Imbalance (CI) mesure la sous-representation d'un groupe ; Difference in Proportions of Labels (DPL) compare la proportion de labels positifs entre groupes, exactement le controle demande. Clarify s'execute comme processing job et s'integre a une etape de SageMaker Pipelines.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 317,
+    "question": "An ML engineer prepares features for a linear regression model. The 'annual_income' feature is strongly right-skewed with a long tail, and the 'age' feature has a non-linear relationship with the target that differs across life stages. Which feature engineering steps are MOST appropriate? (Choose two.)",
+    "options": {
+      "A": "Apply a log transformation to annual_income",
+      "B": "Apply one-hot encoding to annual_income",
+      "C": "Remove the age feature",
+      "D": "Bin age into ranges (for example, 18-25, 26-40, 41-60, 60+) and encode the bins",
+      "E": "Multiply all features by 1,000"
+    },
+    "answer": "A, D",
+    "radar": {
+      "declencheurs": [
+        "right-skewed long tail",
+        "linear regression",
+        "non-linear relationship by life stage"
+      ],
+      "signal": "Distribution asymetrique -> log transform ; relation non lineaire par paliers -> binning",
+      "pieges": {
+        "B": "Le one-hot sur une variable continue cree une colonne par valeur unique : non-sens",
+        "C": "Supprimer l'age perd une information predictive ; il faut la transformer",
+        "E": "Multiplier par une constante ne change ni l'asymetrie ni la non-linearite"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "La transformation logarithmique comprime la longue queue d'une variable asymetrique comme le revenu, ce qui rapproche sa distribution d'une normale et limite l'influence des valeurs extremes sur un modele lineaire. Le binning transforme l'age en categories, et permet a un modele lineaire de capter un effet different selon la tranche de vie.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 318,
+    "question": "A dataset contains 'distance_km' (0-5,000) and 'number_of_children' (0-6). An ML engineer will train both a k-nearest neighbors (k-NN) model and an XGBoost model on it. For which model is feature scaling (standardization or normalization) required to avoid one feature dominating the others?",
+    "options": {
+      "A": "Only XGBoost",
+      "B": "Only k-NN",
+      "C": "Both models",
+      "D": "Neither model"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "very different value ranges",
+        "k-NN",
+        "XGBoost",
+        "feature scaling"
+      ],
+      "signal": "Algorithmes bases sur des distances (k-NN, k-means, SVM) -> scaling obligatoire ; arbres (XGBoost, Random Forest) -> insensibles a l'echelle",
+      "pieges": {
+        "A": "Les arbres de decision font des coupures par seuil : l'echelle d'une variable ne change pas l'ordre des valeurs",
+        "C": "XGBoost n'a pas besoin de scaling, cela ajoute seulement une etape inutile",
+        "D": "Sans scaling, la distance k-NN est dominee par distance_km"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 1
+      }
+    },
+    "explication": "k-NN calcule des distances euclidiennes : une difference de 1 000 km ecrase totalement une difference de 3 enfants, donc il faut standardiser ou normaliser. Les modeles a base d'arbres comparent chaque variable a des seuils, independamment de son echelle : une transformation monotone comme le scaling ne change pas leurs decoupages.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 319,
+    "question": "An ML engineer builds a churn training dataset from Amazon SageMaker Feature Store. Each training example has a label timestamp. The engineer discovers that some feature values were recorded after the label timestamp, which inflates offline accuracy. How should the engineer build the dataset to prevent this leakage?",
+    "options": {
+      "A": "Read the latest feature values from the online store for every customer",
+      "B": "Drop the event_time feature from the feature group",
+      "C": "Use the Feature Store dataset builder (create_dataset) on the offline store with a point-in-time accurate join based on each example's label timestamp",
+      "D": "Shuffle the dataset before training"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "feature values recorded after the label timestamp",
+        "leakage",
+        "offline accuracy inflated"
+      ],
+      "signal": "Eviter la fuite temporelle dans un dataset de features -> point-in-time join sur l'offline store (event_time)",
+      "pieges": {
+        "A": "Le online store ne garde que la derniere valeur : c'est precisement une valeur du futur",
+        "B": "event_time est obligatoire : c'est lui qui permet la jointure temporelle correcte",
+        "D": "Melanger ne change pas les valeurs de features utilisees"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 4
+      }
+    },
+    "explication": "L'offline store conserve l'historique de chaque feature avec son event_time. Le dataset builder du SDK Feature Store peut produire une jointure point-in-time : pour chaque exemple, il prend la valeur de la feature telle qu'elle existait juste avant le timestamp du label. Le modele est ainsi entraine avec les informations reellement disponibles au moment de la prediction.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 320,
+    "question": "An AWS Glue ETL job ingests partner files whose schemas change often. Some new columns may contain email addresses, phone numbers, or credit card numbers without being documented. Before the data is used for training, PII must be detected in any column and replaced with a hash. Which solution requires the LEAST custom code?",
+    "options": {
+      "A": "Write regular expressions in the Glue script for each known column name",
+      "B": "Add the Detect Sensitive Data transform to the Glue job, configured to scan all columns and apply a hashing action to detected PII",
+      "C": "Run Amazon Macie on the output bucket once a month",
+      "D": "Encrypt the entire output with AWS KMS"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "schemas change often",
+        "undocumented columns with PII",
+        "hash",
+        "Glue ETL",
+        "least custom code"
+      ],
+      "signal": "Detection et transformation de PII dans un job Glue, quelle que soit la colonne -> transform Detect Sensitive Data (redact/hash)",
+      "pieges": {
+        "A": "Des regex par nom de colonne ratent les nouvelles colonnes non documentees",
+        "C": "Macie detecte apres coup, mensuellement, et ne hashe rien",
+        "D": "Le chiffrement global protege le stockage, mais les PII restent lisibles pour l'entrainement"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "La transformation Detect Sensitive Data d'AWS Glue inspecte le contenu des colonnes (et pas seulement leur nom) pour reperer des types de PII predefinis ou des motifs personnalises. Elle applique ensuite une action : redaction, hachage ou simple signalement. Elle s'ajoute dans Glue Studio sans code, et fonctionne meme quand le schema evolue.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.8",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 321,
+    "question": "A healthcare provider wants to build ML features from unstructured clinical notes. The provider needs to extract medical conditions, medications, and dosages, and to map conditions to ICD-10-CM codes. The provider also wants to store and query the resulting patient data in the FHIR standard. Which AWS services should the ML engineer use? (Choose two.)",
+    "options": {
+      "A": "Amazon Comprehend Medical",
+      "B": "Amazon Textract",
+      "C": "AWS HealthLake",
+      "D": "Amazon Kendra",
+      "E": "Amazon Translate"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "clinical notes",
+        "medical conditions, medications, dosages",
+        "ICD-10-CM",
+        "FHIR"
+      ],
+      "signal": "Entites medicales + codes ICD-10 -> Comprehend Medical ; stockage et requetes au format FHIR -> AWS HealthLake",
+      "pieges": {
+        "B": "Textract extrait du texte de documents scannes, sans comprehension medicale",
+        "D": "Kendra est un moteur de recherche d'entreprise, pas un extracteur d'entites medicales",
+        "E": "Translate traduit du texte, il n'extrait pas d'entites"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 3,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Amazon Comprehend Medical detecte les entites medicales (pathologies, medicaments, dosages, frequences) et propose des ontologies comme ICD-10-CM et RxNorm. AWS HealthLake est un data store compatible HIPAA qui stocke, transforme et interroge les donnees de sante au standard FHIR, et integre lui-meme l'extraction NLP medicale.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.8",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 322,
+    "question": "A data lake in Amazon S3 is cataloged in the AWS Glue Data Catalog. Data scientists query it with Amazon Athena to build training sets. They must be able to read all columns of the customers table except ssn and date_of_birth, while the compliance team can read every column. The company wants central, fine-grained governance without duplicating data. What should the ML engineer do?",
+    "options": {
+      "A": "Create a second copy of the table without the sensitive columns in another S3 bucket",
+      "B": "Use S3 bucket policies to deny access to the sensitive columns",
+      "C": "Encrypt the sensitive columns with a different KMS key",
+      "D": "Register the S3 location with AWS Lake Formation and grant column-level permissions that exclude ssn and date_of_birth to the data scientists' role"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "all columns except",
+        "fine-grained governance",
+        "without duplicating data",
+        "Athena + Glue Data Catalog"
+      ],
+      "signal": "Controle d'acces au niveau colonne sur un data lake -> Lake Formation (column-level / data filters)",
+      "pieges": {
+        "A": "Une copie double le stockage et cree des divergences de donnees",
+        "B": "Les bucket policies agissent au niveau objet, pas au niveau colonne",
+        "C": "Le chiffrement n'est pas une gestion fine des permissions, et il est complexe a appliquer par colonne"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 1,
+        "op_overhead": 4
+      }
+    },
+    "explication": "AWS Lake Formation centralise les permissions sur les tables du Data Catalog, avec une granularite colonne, ligne ou cellule (data filters). Athena applique ces permissions a la requete : les data scientists voient la table sans les colonnes sensibles, la conformite voit tout, et il n'existe qu'une seule copie des donnees.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 323,
+    "question": "A company must transfer 80 TB of image data from an on-premises NFS file server to Amazon S3 for model training. New images are added every day and must also be synchronized each night. The company has a 10 Gbps AWS Direct Connect link. Which solution meets these requirements with the LEAST operational effort?",
+    "options": {
+      "A": "Use AWS DataSync with an agent on premises, with a scheduled task that transfers data over Direct Connect to S3",
+      "B": "Write a cron script that runs aws s3 sync on the file server",
+      "C": "Order an AWS Snowball device every night",
+      "D": "Mount the NFS share on a SageMaker notebook and copy the files manually"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "on-premises NFS",
+        "80 TB",
+        "daily sync",
+        "Direct Connect",
+        "least effort"
+      ],
+      "signal": "Transfert initial + synchronisation planifiee depuis NFS/SMB vers S3 -> AWS DataSync (agent, planification, verification d'integrite)",
+      "pieges": {
+        "B": "Un script cron demande gestion des erreurs, retries, parallelisme et supervision",
+        "C": "Snowball sert aux transferts ponctuels hors ligne, pas a une synchronisation quotidienne",
+        "D": "Une copie manuelle n'est ni fiable ni automatisee"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 2,
+        "haute_dispo": 2,
+        "performance": 4,
+        "op_overhead": 5
+      }
+    },
+    "explication": "AWS DataSync automatise le transfert entre stockage sur site (NFS, SMB, HDFS) et S3, avec chiffrement, verification d'integrite, parallelisme et limitation de bande passante. Une tache planifiee ne transfere chaque nuit que les fichiers nouveaux ou modifies, et peut utiliser le lien Direct Connect via un VPC endpoint.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.1",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 324,
+    "question": "An ML engineer fine-tunes a BERT-based model, which has a 512-token maximum input length, to classify legal documents. Many documents are 5,000 to 20,000 tokens long, and the label often depends on clauses near the end of the document. Default truncation keeps only the first 512 tokens, and accuracy is poor. What should the engineer do?",
+    "options": {
+      "A": "Remove all stop words so that the documents fit into 512 tokens",
+      "B": "Increase the batch size",
+      "C": "Split each document into overlapping 512-token chunks with a sliding window, classify each chunk, and aggregate the chunk predictions per document",
+      "D": "Truncate from the start instead of the end"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "512-token limit",
+        "documents 5,000-20,000 tokens",
+        "label depends on end of document",
+        "truncation"
+      ],
+      "signal": "Texte plus long que la fenetre du modele -> decoupage en fenetres glissantes avec chevauchement + agregation des predictions",
+      "pieges": {
+        "A": "Retirer les stop words ne divise pas un texte de 20 000 tokens par 40",
+        "B": "La taille de batch ne change pas la longueur d'entree maximale",
+        "D": "Garder seulement la fin perd les informations du debut : le probleme est seulement deplace"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Le decoupage en fenetres glissantes, avec un chevauchement pour ne pas couper une clause en deux, permet au modele de lire tout le document. Les predictions des chunks sont ensuite agregees (max, moyenne ou vote) pour obtenir le label du document. Une alternative est un modele a fenetre de contexte plus longue.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 325,
+    "question": "A fraud dataset contains 0.2% positive examples. An ML engineer will train an XGBoost model on Amazon SageMaker AI. Which actions are appropriate to handle the class imbalance? (Choose two.)",
+    "options": {
+      "A": "Apply SMOTE to the entire dataset before splitting it into training and test sets",
+      "B": "Set the scale_pos_weight hyperparameter to approximately the ratio of negative to positive examples",
+      "C": "Use accuracy as the objective metric",
+      "D": "Apply oversampling (for example, SMOTE) only to the training split, and keep the validation and test sets with the original distribution",
+      "E": "Remove all positive examples that look like outliers"
+    },
+    "answer": "B, D",
+    "radar": {
+      "declencheurs": [
+        "0.2% positive",
+        "XGBoost",
+        "class imbalance"
+      ],
+      "signal": "Desequilibre -> ponderer la classe minoritaire (scale_pos_weight) et/ou reechantillonner UNIQUEMENT le jeu d'entrainement",
+      "pieges": {
+        "A": "SMOTE avant le split fait fuiter des exemples synthetiques derives du test dans l'entrainement",
+        "C": "Avec 0,2% de fraude, predire toujours 'non fraude' donne 99,8% d'accuracy",
+        "E": "Supprimer des fraudes atypiques retire justement les cas les plus importants a detecter"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "scale_pos_weight augmente le poids des exemples positifs dans la loss de XGBoost (valeur typique : nombre de negatifs / nombre de positifs). Le reechantillonnage est aussi valable, mais seulement sur le jeu d'entrainement, apres le split : les jeux de validation et de test doivent refleter la distribution reelle pour donner une evaluation honnete (avec PR AUC, F1 ou recall plutot que l'accuracy).",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 326,
+    "question": "An ML team has three trained models for credit risk: a gradient boosted tree model, a logistic regression model, and a neural network. Each model performs best on different customer segments, and no single model is best overall. The team wants to combine them to improve overall predictive performance. Which approach should the team use?",
+    "options": {
+      "A": "Keep only the model with the highest training accuracy",
+      "B": "Average the hyperparameters of the three models",
+      "C": "Retrain the neural network with more epochs",
+      "D": "Use stacking: train a meta-model that takes the predictions of the three base models as input features"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "three different models",
+        "each best on different segments",
+        "combine to improve performance"
+      ],
+      "signal": "Modeles heterogenes aux forces complementaires -> ensemble par stacking (meta-learner sur les predictions)",
+      "pieges": {
+        "A": "Garder un seul modele perd les forces des autres, et l'accuracy d'entrainement est un mauvais critere",
+        "B": "Moyenner des hyperparametres de modeles differents n'a aucun sens",
+        "C": "Plus d'epoques risque l'overfitting sans exploiter les autres modeles"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Le stacking entraine un meta-modele (souvent simple, comme une regression logistique) sur les predictions out-of-fold des modeles de base. Il apprend quand faire confiance a chaque modele, et exploite leurs erreurs decorrelees pour depasser le meilleur modele individuel.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.2.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 327,
+    "question": "A single deep decision tree reaches 99% accuracy on the training data but only 78% on the validation data. Predictions change significantly when the model is retrained on slightly different samples. Which ensemble technique primarily addresses this problem?",
+    "options": {
+      "A": "Bagging, such as a random forest that averages many trees trained on bootstrap samples",
+      "B": "Boosting with a higher learning rate",
+      "C": "Increasing the maximum tree depth",
+      "D": "Removing the validation set"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "99% train vs 78% validation",
+        "predictions change with slightly different samples",
+        "high variance"
+      ],
+      "signal": "Variance elevee (overfitting instable) -> bagging (random forest) ; biais eleve -> boosting",
+      "pieges": {
+        "B": "Le boosting reduit surtout le biais, et un learning rate eleve augmente le risque d'overfitting",
+        "C": "Un arbre plus profond overfit encore plus",
+        "D": "Retirer la validation masque le probleme sans le resoudre"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 1
+      }
+    },
+    "explication": "Le bagging entraine de nombreux modeles sur des echantillons bootstrap differents, puis moyenne leurs predictions. Cela reduit la variance d'un modele instable comme un arbre profond. La random forest ajoute un tirage aleatoire des features a chaque split, pour decorreler encore plus les arbres.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.2.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 328,
+    "question": "A data scientist has a working PyTorch training script that reads data from a local folder and saves the model to a local path. The team wants to run it on Amazon SageMaker AI managed training with the fewest code changes and without maintaining a custom container. What should the ML engineer do?",
+    "options": {
+      "A": "Build a custom Docker image with PyTorch and push it to Amazon ECR",
+      "B": "Use the SageMaker PyTorch estimator in script mode with the script as entry_point, read input from SM_CHANNEL_TRAINING, and save the model to SM_MODEL_DIR",
+      "C": "Rewrite the model with the SageMaker built-in XGBoost algorithm",
+      "D": "Run the script on a SageMaker notebook instance"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "existing PyTorch script",
+        "fewest code changes",
+        "no custom container"
+      ],
+      "signal": "Script existant d'un framework supporte -> script mode (estimator PyTorch/TensorFlow/sklearn) + variables d'environnement SM_*",
+      "pieges": {
+        "A": "Un conteneur custom ajoute une image a construire, securiser et maintenir",
+        "C": "Changer d'algorithme oblige a tout reecrire",
+        "D": "Un notebook n'est pas un entrainement gere (pas de scaling, ni de tracabilite du job)"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "En script mode, SageMaker utilise un conteneur PyTorch pre-construit et y execute le script fourni. Il suffit de lire les donnees dans le chemin donne par SM_CHANNEL_TRAINING (/opt/ml/input/data/training) et d'ecrire le modele dans SM_MODEL_DIR (/opt/ml/model). Les hyperparametres sont passes en arguments de ligne de commande, et un requirements.txt permet d'ajouter des dependances.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.2.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 329,
+    "question": "An ML team runs SageMaker automatic model tuning (AMT) every month on new data. Each tuning job takes 2 days because many trials with poor hyperparameters run to completion, and every new job starts from scratch even though last month's tuning results are still relevant. Which actions will reduce tuning time? (Choose two.)",
+    "options": {
+      "A": "Use the Hyperband tuning strategy so that poorly performing training jobs are stopped early",
+      "B": "Switch to grid search over all hyperparameter combinations",
+      "C": "Increase the number of hyperparameters to tune",
+      "D": "Use a warm start tuning job with the previous month's tuning job as parent",
+      "E": "Set the maximum number of parallel training jobs to 1"
+    },
+    "answer": "A, D",
+    "radar": {
+      "declencheurs": [
+        "poor trials run to completion",
+        "starts from scratch",
+        "previous results still relevant",
+        "reduce tuning time"
+      ],
+      "signal": "Arreter tot les mauvais essais -> Hyperband (ou early stopping) ; reutiliser les resultats passes -> warm start",
+      "pieges": {
+        "B": "La grid search teste toutes les combinaisons : c'est la strategie la plus lente",
+        "C": "Plus d'hyperparametres agrandit l'espace de recherche et allonge le tuning",
+        "E": "Un seul job en parallele allonge la duree totale"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Hyperband alloue les ressources dynamiquement et arrete tot les configurations peu prometteuses, en se basant sur les metriques intermediaires. Le warm start initialise un nouveau tuning avec les resultats d'un ou plusieurs jobs parents (IDENTICAL_DATA_AND_ALGORITHM ou TRANSFER_LEARNING), ce qui evite de reexplorer les zones deja connues comme mauvaises.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.2.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 330,
+    "question": "An ML engineer moves a training job from 1 GPU with a batch size of 64 to 8 GPUs with data parallelism, using a global batch size of 512. The learning rate is unchanged. The model now converges much more slowly per epoch and reaches lower accuracy. Which adjustment should the engineer try FIRST?",
+    "options": {
+      "A": "Reduce the learning rate by a factor of 8",
+      "B": "Go back to a batch size of 64 per epoch on 8 GPUs without changing anything else",
+      "C": "Scale the learning rate proportionally to the batch size (about 8x), with a warm-up period at the start of training",
+      "D": "Remove the validation set to speed up training"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "batch size x8",
+        "learning rate unchanged",
+        "slower convergence",
+        "data parallelism"
+      ],
+      "signal": "Batch global plus grand -> moins d'updates par epoque -> augmenter le learning rate proportionnellement (linear scaling rule) + warm-up",
+      "pieges": {
+        "A": "Reduire le learning rate ralentit encore la convergence",
+        "B": "Garder un petit batch global sous-utilise les 8 GPU et annule l'interet du parallelisme",
+        "D": "La validation ne ralentit pas la convergence, elle sert a la mesurer"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 1
+      }
+    },
+    "explication": "Avec un batch global 8 fois plus grand, chaque epoque fait 8 fois moins de mises a jour des poids. La regle d'echelle lineaire consiste a multiplier le learning rate par le meme facteur que le batch, avec un warm-up progressif pour eviter l'instabilite des premieres iterations. C'est le premier reglage a faire apres un passage en entrainement distribue.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.2.7",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 331,
+    "question": "During training of a deep neural network on Amazon SageMaker AI, the training loss suddenly becomes NaN after a few hundred steps. Amazon SageMaker Debugger reports that the ExplodingTensor rule was triggered. Which actions should the ML engineer take? (Choose two.)",
+    "options": {
+      "A": "Apply gradient clipping",
+      "B": "Increase the learning rate",
+      "C": "Remove batch normalization layers",
+      "D": "Lower the learning rate",
+      "E": "Increase the number of epochs"
+    },
+    "answer": "A, D",
+    "radar": {
+      "declencheurs": [
+        "loss becomes NaN",
+        "ExplodingTensor rule",
+        "deep neural network"
+      ],
+      "signal": "Gradients qui explosent -> gradient clipping + learning rate plus bas (et eventuellement normalisation)",
+      "pieges": {
+        "B": "Un learning rate plus eleve amplifie les mises a jour et aggrave l'explosion",
+        "C": "La batch normalization stabilise l'entrainement, la retirer aggrave le probleme",
+        "E": "Plus d'epoques ne corrige pas une loss deja a NaN"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Une loss qui devient NaN apres des valeurs de plus en plus grandes est le signe de gradients qui explosent. Le gradient clipping plafonne la norme des gradients, et un learning rate plus faible reduit l'amplitude des mises a jour. Debugger detecte ce cas avec la regle ExplodingTensor et peut arreter automatiquement le job.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.3.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 332,
+    "question": "A company runs hundreds of training jobs per week on Amazon SageMaker AI. Many jobs continue for hours after the loss has stopped decreasing, which wastes compute. The ML engineer wants to automatically stop any job whose loss stops improving, without modifying the training scripts. What should the engineer configure?",
+    "options": {
+      "A": "An Amazon CloudWatch alarm on CPUUtilization",
+      "B": "A shorter MaxRuntimeInSeconds for every job",
+      "C": "SageMaker Model Monitor on the training jobs",
+      "D": "The SageMaker Debugger built-in rule LossNotDecreasing with the built-in StopTraining action"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "loss stopped decreasing",
+        "automatically stop",
+        "without modifying scripts"
+      ],
+      "signal": "Arreter automatiquement un entrainement qui ne progresse plus -> Debugger built-in rule (LossNotDecreasing) + action StopTraining",
+      "pieges": {
+        "A": "L'utilisation CPU ne dit pas si la loss diminue",
+        "B": "Une duree maximale fixe coupe aussi les jobs qui progressent encore",
+        "C": "Model Monitor surveille des endpoints en production, pas des jobs d'entrainement"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "SageMaker Debugger capture les tenseurs pendant l'entrainement et evalue des regles integrees (LossNotDecreasing, Overfit, VanishingGradient, ExplodingTensor...). Les actions integrees peuvent arreter le job (StopTraining) ou envoyer une notification quand une regle se declenche, sans modifier le script avec les conteneurs de frameworks supportes.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.3.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 333,
+    "question": "A regulator requires a bank to explain to each rejected applicant which factors contributed most to the rejection of that specific application. The bank uses an XGBoost model hosted on Amazon SageMaker AI. What should the ML engineer provide?",
+    "options": {
+      "A": "Global feature importance from the XGBoost model",
+      "B": "Partial dependence plots (PDPs) for each feature",
+      "C": "Local SHAP values for each prediction, computed with SageMaker Clarify (for example, with online explainability on the endpoint)",
+      "D": "The confusion matrix of the model"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "explain each specific application",
+        "which factors contributed",
+        "regulator"
+      ],
+      "signal": "Explication par prediction individuelle (locale) -> valeurs SHAP de Clarify ; explication globale -> feature importance / PDP",
+      "pieges": {
+        "A": "L'importance globale decrit le modele en moyenne, pas la decision prise pour un client precis",
+        "B": "Les PDP montrent l'effet moyen d'une feature sur tout le dataset : explication globale",
+        "D": "La matrice de confusion mesure la performance, elle n'explique rien"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 2,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Les valeurs SHAP attribuent a chaque feature sa contribution a une prediction precise, par rapport a une baseline. SageMaker Clarify les calcule en batch (processing job) ou en temps reel avec online explainability, ce qui renvoie l'explication avec chaque inference. Les PDP et l'importance globale ne decrivent que le comportement moyen du modele.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.3.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 334,
+    "question": "A churn model in production shows stable input feature distributions according to SageMaker Model Monitor data quality checks. However, business stakeholders notice that the model now relies mostly on 'support_tickets' instead of 'contract_length' to make predictions, which differs from the training-time behavior. Which monitoring capability detects this type of change?",
+    "options": {
+      "A": "Model Monitor feature attribution drift monitoring, which uses SageMaker Clarify to compare the ranking of feature attributions with a training baseline",
+      "B": "Model Monitor data quality monitoring with stricter thresholds",
+      "C": "CloudWatch ModelLatency alarms",
+      "D": "AWS CloudTrail data events"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "input distributions stable",
+        "model relies on different features",
+        "differs from training"
+      ],
+      "signal": "Changement de l'importance des features en production -> feature attribution drift (Model Monitor + Clarify, score NDCG)",
+      "pieges": {
+        "B": "La data quality surveille les distributions d'entree, deja stables ici",
+        "C": "La latence ne dit rien du comportement du modele",
+        "D": "CloudTrail trace des appels d'API, pas le comportement d'un modele"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Model Monitor propose quatre types de surveillance : data quality, model quality, bias drift et feature attribution drift. Ce dernier calcule periodiquement les attributions SHAP sur les donnees capturees, et compare le classement des features a la baseline d'entrainement avec un score NDCG. Une baisse de ce score revele que le modele s'appuie sur d'autres features qu'a l'entrainement.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.3.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 335,
+    "question": "An insurance company must predict claim approval. Regulations require that every model decision can be fully traced to explicit rules that auditors can read, and the company accepts slightly lower accuracy in exchange. Which model type should the ML engineer choose?",
+    "options": {
+      "A": "A deep neural network with SHAP explanations",
+      "B": "A shallow decision tree with limited depth",
+      "C": "A large ensemble of 1,000 gradient boosted trees",
+      "D": "A fine-tuned large language model"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "fully traced to explicit rules",
+        "auditors can read",
+        "accepts slightly lower accuracy"
+      ],
+      "signal": "Interpretabilite intrinseque exigee -> modele simple et transparent (arbre peu profond, regression lineaire/logistique)",
+      "pieges": {
+        "A": "SHAP fournit une approximation post-hoc, pas des regles explicites et completes",
+        "C": "Un ensemble de 1 000 arbres n'est pas lisible par un auditeur",
+        "D": "Un LLM est une boite noire, non deterministe et non tracable en regles"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Quand la reglementation exige que chaque decision soit tracable en regles lisibles, il faut un modele intrinsequement interpretable. Un arbre de decision peu profond se lit comme une suite de conditions SI/ALORS. Les methodes d'explication post-hoc (SHAP, LIME) eclairent les modeles complexes, mais ne les rendent pas transparents.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.1.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 336,
+    "question": "A retail company wants to detect its own brand logos on shelf photos. It has 400 labeled images. The team has no deep learning expertise and wants a solution with the LEAST development effort. What should the ML engineer use?",
+    "options": {
+      "A": "Amazon Rekognition DetectLabels",
+      "B": "A custom object detection model trained from scratch on Amazon SageMaker AI",
+      "C": "Amazon Textract",
+      "D": "Amazon Rekognition Custom Labels"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "own brand logos",
+        "400 labeled images",
+        "no deep learning expertise",
+        "least effort"
+      ],
+      "signal": "Objets specifiques a l'entreprise + peu d'images + pas d'expertise -> Rekognition Custom Labels (AutoML vision)",
+      "pieges": {
+        "A": "DetectLabels reconnait des concepts generiques ('logo', 'bouteille'), pas la marque precise",
+        "B": "Entrainer un detecteur from scratch demande expertise et beaucoup plus de donnees",
+        "C": "Textract extrait du texte et des formulaires, pas des logos graphiques"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Rekognition Custom Labels entraine un modele de classification ou de detection d'objets specifique a partir de quelques centaines d'images etiquetees, en s'appuyant sur le transfer learning. Aucune expertise en deep learning n'est requise : il suffit de fournir les images annotees, puis de demarrer le modele pour l'inference.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.1.8",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 337,
+    "question": "An ML team wants to fine-tune a 70-billion-parameter model. The model's weights, gradients, and optimizer states do not fit in the memory of a single GPU, even on the largest available instance. Which training approach should the ML engineer use?",
+    "options": {
+      "A": "Data parallelism only, which replicates the full model on each GPU",
+      "B": "Increase the batch size",
+      "C": "Model parallelism, such as sharded data parallelism (FSDP) or tensor and pipeline parallelism with the SageMaker model parallelism library",
+      "D": "Use a CPU instance with more RAM"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "70 billion parameters",
+        "does not fit in memory of a single GPU"
+      ],
+      "signal": "Modele trop grand pour un GPU -> parallelisme de modele / sharding (FSDP, tensor, pipeline) ; dataset trop grand -> data parallelism",
+      "pieges": {
+        "A": "Le data parallelism copie tout le modele sur chaque GPU : il ne tient toujours pas",
+        "B": "Un batch plus grand augmente la memoire necessaire",
+        "D": "Entrainer un 70B sur CPU serait beaucoup trop lent"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Quand le modele ne tient pas sur un seul GPU, il faut le repartir. Le sharded data parallelism (FSDP / ZeRO) partitionne parametres, gradients et etats de l'optimiseur entre les GPU. Le tensor parallelism coupe les couches, et le pipeline parallelism repartit les couches entre GPU. La SageMaker model parallelism library (SMP) prend en charge ces techniques. Le data parallelism seul accelere l'entrainement sur de gros datasets, mais suppose que le modele tienne sur chaque GPU.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.1.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 338,
+    "question": "A logistics company receives scanned delivery forms from hundreds of suppliers, each with a different layout. The company needs to extract only three values from each form: the delivery date, the PO number, and the total weight. It does not want to build a template per supplier. Which solution requires the LEAST effort?",
+    "options": {
+      "A": "Use Amazon Textract AnalyzeDocument with the Queries feature, asking questions such as 'What is the PO number?'",
+      "B": "Use Amazon Textract DetectDocumentText and write regular expressions for each supplier layout",
+      "C": "Train a custom named entity recognition model on SageMaker AI",
+      "D": "Use Amazon Comprehend key phrase extraction on the images"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "different layouts",
+        "only three values",
+        "no template per supplier",
+        "least effort"
+      ],
+      "signal": "Extraire des champs precis de documents a mise en page variable -> Textract Queries (questions en langage naturel)",
+      "pieges": {
+        "B": "Des regex par fournisseur reviennent a creer un template par fournisseur",
+        "C": "Un modele NER custom demande des donnees etiquetees et un entrainement",
+        "D": "Comprehend ne lit pas les images et les key phrases ne ciblent pas des champs precis"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 5
+      }
+    },
+    "explication": "La fonctionnalite Queries de Textract permet de poser des questions en langage naturel sur un document ('What is the PO number?'). Textract renvoie la reponse avec un score de confiance, quelle que soit la mise en page. C'est ideal quand les formats sont nombreux et que seuls quelques champs sont utiles. Les Custom Queries (adapters) permettent d'ameliorer encore la precision.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.1.8",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 339,
+    "question": "A fraud detection model is evaluated on a test set in which 0.5% of transactions are fraudulent. Missing a fraud is very costly, but too many false alerts overload the investigation team. Which metrics are MOST appropriate to compare candidate models? (Choose two.)",
+    "options": {
+      "A": "Accuracy",
+      "B": "Area under the precision-recall curve (PR AUC)",
+      "C": "Mean squared error (MSE)",
+      "D": "F1 score (or F-beta with beta greater than 1 to favor recall)",
+      "E": "R-squared"
+    },
+    "answer": "B, D",
+    "radar": {
+      "declencheurs": [
+        "0.5% fraudulent",
+        "missing a fraud is costly",
+        "too many false alerts"
+      ],
+      "signal": "Classification tres desequilibree + compromis rappel/precision -> PR AUC et F1 / F-beta",
+      "pieges": {
+        "A": "L'accuracy est trompeuse : un modele qui ne detecte rien obtient 99,5%",
+        "C": "La MSE est une metrique de regression",
+        "E": "Le R2 est une metrique de regression"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 0
+      }
+    },
+    "explication": "Sur des donnees tres desequilibrees, la PR AUC est plus informative que la ROC AUC, car elle se concentre sur la classe positive rare. Le F1 equilibre precision (peu de fausses alertes) et recall (peu de fraudes manquees). Le F-beta avec beta > 1 donne plus de poids au recall quand une fraude manquee coute plus cher qu'une fausse alerte.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.3.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 340,
+    "question": "A regression model predicts delivery times. The data contains occasional extreme delays caused by rare events that the business does not want to dominate model selection. Which evaluation metric is MOST appropriate?",
+    "options": {
+      "A": "Root mean squared error (RMSE)",
+      "B": "Mean absolute error (MAE)",
+      "C": "Area under the ROC curve (AUC)",
+      "D": "Precision"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "regression",
+        "occasional extreme values",
+        "should not dominate"
+      ],
+      "signal": "Regression robuste aux valeurs extremes -> MAE ; RMSE penalise fortement les grosses erreurs (carre)",
+      "pieges": {
+        "A": "La RMSE eleve les erreurs au carre : quelques retards extremes dominent la metrique",
+        "C": "L'AUC est une metrique de classification",
+        "D": "La precision est une metrique de classification"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 0
+      }
+    },
+    "explication": "La MAE fait la moyenne des erreurs absolues : chaque erreur compte proportionnellement a sa taille, ce qui la rend robuste aux valeurs aberrantes. La RMSE eleve les erreurs au carre, donc quelques retards extremes pesent enormement, ce qui est souhaitable seulement quand les grosses erreurs sont particulierement couteuses.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.3.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 341,
+    "question": "A media company wants a foundation model on Amazon Bedrock to write article summaries in its very specific editorial style (tone, structure, vocabulary). Prompt engineering with few-shot examples has improved results, but the style is still inconsistent. The company has 8,000 examples of articles paired with summaries written by its editors. Which approach should the ML engineer choose NEXT?",
+    "options": {
+      "A": "Build a RAG solution with the 8,000 summaries in a knowledge base",
+      "B": "Use continued pre-training on raw articles without summaries",
+      "C": "Increase the temperature to make the summaries more creative",
+      "D": "Fine-tune a supported model on Amazon Bedrock with the 8,000 article-summary pairs as prompt-completion data"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "specific editorial style",
+        "prompt engineering not enough",
+        "8,000 labeled pairs"
+      ],
+      "signal": "Adapter le style ou le comportement avec des exemples etiquetes, apres echec du prompt engineering -> fine-tuning supervise",
+      "pieges": {
+        "A": "Le RAG apporte des connaissances factuelles, il ne change pas durablement le style d'ecriture",
+        "B": "Le pre-entrainement continu sur des articles bruts n'apprend pas la tache de resume dans le style voulu",
+        "C": "Une temperature plus elevee rend le style encore moins constant"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "La regle generale : connaissances qui changent -> RAG ; style, format ou comportement -> fine-tuning. Avec des milliers de paires exemple/resultat de qualite, et apres avoir epuise le prompt engineering, le fine-tuning supervise apprend au modele le ton et la structure editoriale de facon constante, avec des prompts plus courts.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.2.8",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 342,
+    "question": "An ML engineer trains an image classification model on a 5 TB dataset. One training run takes 4 days on a single ml.p4d.24xlarge instance, and the model fits easily in GPU memory. The team needs results in less than 1 day. Which actions will reduce training time? (Choose two.)",
+    "options": {
+      "A": "Use distributed data parallel training across multiple instances (for example, with the SageMaker distributed data parallelism library or PyTorch DDP)",
+      "B": "Switch to model parallelism to split the model across GPUs",
+      "C": "Enable early stopping based on the validation metric",
+      "D": "Increase the number of epochs",
+      "E": "Use a CPU instance type with more vCPUs"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "large dataset",
+        "model fits in GPU memory",
+        "4 days to less than 1 day"
+      ],
+      "signal": "Gros dataset + modele qui tient en memoire -> data parallelism multi-instances ; ne pas entrainer inutilement -> early stopping",
+      "pieges": {
+        "B": "Le model parallelism sert quand le modele ne tient pas en memoire ; ici il ajoute de la communication sans benefice",
+        "D": "Plus d'epoques allonge l'entrainement",
+        "E": "Des CPU sont bien plus lents que des GPU pour de la vision"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Le data parallelism repartit les batches sur plusieurs GPU et instances, chacun ayant une copie du modele, et synchronise les gradients. Le temps par epoque diminue presque lineairement. L'early stopping arrete l'entrainement des que la metrique de validation ne s'ameliore plus, ce qui evite des epoques inutiles.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.2.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 343,
+    "question": "A model requires the same scikit-learn preprocessing (imputation and one-hot encoding) at inference time that was used during training, followed by an XGBoost prediction and a post-processing step that converts scores to labels. The client application must make a single call. The ML engineer wants to reuse the trained preprocessing artifacts. What should the engineer deploy?",
+    "options": {
+      "A": "Three separate SageMaker AI endpoints that the client calls in sequence",
+      "B": "A SageMaker AI inference pipeline model that chains the preprocessing, XGBoost, and post-processing containers on a single endpoint",
+      "C": "A multi-model endpoint that hosts the three models",
+      "D": "An AWS Lambda function that reimplements the preprocessing logic"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "same preprocessing at inference",
+        "followed by prediction and post-processing",
+        "single call"
+      ],
+      "signal": "Chaine pretraitement -> modele -> post-traitement en un appel -> inference pipeline (2 a 15 conteneurs en serie)",
+      "pieges": {
+        "A": "Trois endpoints = trois appels reseau, plus de latence et de cout, et une logique de chainage cote client",
+        "C": "Un multi-model endpoint sert un seul modele par requete, il ne les chaine pas",
+        "D": "Reimplementer le pretraitement cree un risque de training-serving skew"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 4,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Un inference pipeline model execute 2 a 15 conteneurs en serie sur les memes instances : la sortie de chaque conteneur devient l'entree du suivant. On reutilise les artefacts de pretraitement entraines (par exemple un modele SparkML ou scikit-learn), ce qui garantit le meme traitement qu'a l'entrainement, avec un seul appel InvokeEndpoint.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.1.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 344,
+    "question": "A team has five models built with different frameworks (TensorFlow, PyTorch, XGBoost, scikit-learn, and a custom container). Each model receives low and irregular traffic, and the client must be able to call each model individually. The team wants to reduce hosting costs by sharing infrastructure. Which deployment option should the ML engineer use?",
+    "options": {
+      "A": "A multi-model endpoint",
+      "B": "An inference pipeline",
+      "C": "A multi-container endpoint with direct invocation, in which the client specifies the TargetContainerHostname",
+      "D": "Five separate real-time endpoints"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "different frameworks",
+        "low traffic",
+        "call each model individually",
+        "share infrastructure"
+      ],
+      "signal": "Frameworks differents sur un endpoint, chacun appele individuellement -> multi-container endpoint en direct invocation",
+      "pieges": {
+        "A": "Un multi-model endpoint exige que tous les modeles partagent le meme conteneur ou framework",
+        "B": "Un inference pipeline enchaine les conteneurs, il ne permet pas d'appeler un modele isolement",
+        "D": "Cinq endpoints separes multiplient le cout pour un trafic faible"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Un multi-container endpoint heberge jusqu'a 15 conteneurs differents sur les memes instances. En mode direct invocation, le client choisit le conteneur cible avec l'en-tete TargetContainerHostname. C'est la solution pour mutualiser des modeles heterogenes. Le multi-model endpoint convient plutot a des milliers de modeles d'un meme framework.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.1.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 345,
+    "question": "A company serves a transformer-based text classification model to millions of requests per day on GPU-based SageMaker AI endpoints. The company wants to significantly reduce the cost per inference while keeping high throughput and low latency. The team can compile the model with a supported SDK. Which instance family should the ML engineer evaluate?",
+    "options": {
+      "A": "AWS Inferentia2-based instances (ml.inf2) with the AWS Neuron SDK",
+      "B": "AWS Trainium-based instances (ml.trn1)",
+      "C": "Memory-optimized instances (ml.r5)",
+      "D": "Burstable instances (ml.t3)"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "inference at high volume",
+        "reduce cost per inference",
+        "high throughput, low latency",
+        "compile with SDK"
+      ],
+      "signal": "Inference deep learning a grande echelle au meilleur cout -> instances Inferentia (inf2) + Neuron SDK ; entrainement -> Trainium",
+      "pieges": {
+        "B": "Trainium est optimise pour l'entrainement, pas pour servir l'inference",
+        "C": "Des instances memoire sans accelerateur sont lentes pour un transformer a grand volume",
+        "D": "Les instances burstables ne tiennent pas une charge soutenue"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Les puces AWS Inferentia2 sont concues pour l'inference de modeles de deep learning, transformers compris. Elles offrent un meilleur rapport performance/cout que des GPU comparables pour un trafic eleve. Le modele doit etre compile avec le Neuron SDK (integre a PyTorch et TensorFlow). Trainium est l'equivalent pour l'entrainement.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.1.1",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 346,
+    "question": "An ML platform team wants to define its training infrastructure (S3 buckets, IAM roles, SageMaker AI domain, and SageMaker Pipelines) as code, in Python, with reusable high-level components and references between stacks (for example, a networking stack that exports VPC subnets to an ML stack). Which tool should the ML engineer use?",
+    "options": {
+      "A": "AWS Systems Manager Run Command",
+      "B": "The AWS CLI in shell scripts",
+      "C": "Manual configuration in the AWS Management Console with documentation",
+      "D": "The AWS Cloud Development Kit (AWS CDK)"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "infrastructure as code",
+        "Python",
+        "reusable high-level components",
+        "references between stacks"
+      ],
+      "signal": "IaC dans un langage de programmation, avec constructs reutilisables et references entre stacks -> AWS CDK (synthetise du CloudFormation)",
+      "pieges": {
+        "A": "Run Command execute des commandes sur des instances, ce n'est pas de l'IaC",
+        "B": "Des scripts CLI sont imperatifs, sans gestion d'etat ni rollback",
+        "C": "Une configuration manuelle n'est ni reproductible ni versionnee"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 2,
+        "haute_dispo": 2,
+        "performance": 0,
+        "op_overhead": 5
+      }
+    },
+    "explication": "AWS CDK permet de definir l'infrastructure en Python, TypeScript, Java et d'autres langages, avec des constructs reutilisables, puis la synthetise en templates CloudFormation (gestion d'etat, rollback). Les references entre stacks sont gerees automatiquement : passer un objet VPC d'une stack a une autre cree les exports et imports CloudFormation necessaires.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.2.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 347,
+    "question": "A large company has 40 data science teams. Each team must be able to create, in self-service, a complete MLOps project (code repository, CI/CD pipeline, SageMaker Pipelines, and Model Registry group) that follows the company's approved security standards, without requesting broad IAM permissions. What should the ML engineer implement?",
+    "options": {
+      "A": "Grant AdministratorAccess to every team",
+      "B": "Use SageMaker Projects with organization-approved templates published as AWS Service Catalog products",
+      "C": "Share a wiki page with step-by-step instructions",
+      "D": "Create one shared SageMaker Pipeline for all teams"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "self-service",
+        "complete MLOps project",
+        "approved standards",
+        "without broad IAM permissions"
+      ],
+      "signal": "Provisionnement standardise et gouverne en self-service -> SageMaker Projects (templates Service Catalog)",
+      "pieges": {
+        "A": "AdministratorAccess viole le moindre privilege",
+        "C": "Une procedure manuelle n'est ni standardisee ni controlee",
+        "D": "Un pipeline partage ne donne ni isolation ni autonomie aux equipes"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 5
+      }
+    },
+    "explication": "SageMaker Projects provisionne un projet MLOps complet a partir d'un template AWS Service Catalog (CloudFormation) approuve par l'organisation. Les utilisateurs lancent le produit sans avoir les droits sur les ressources sous-jacentes : Service Catalog utilise un launch role. Chaque equipe obtient ainsi un environnement conforme, en self-service.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.2.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 348,
+    "question": "An ML engineer trains a model with the SageMaker AI prebuilt PyTorch container in script mode. The training script now needs two additional open-source Python packages available on PyPI. What is the simplest way to add them?",
+    "options": {
+      "A": "Build a new container from scratch that includes PyTorch and the two packages",
+      "B": "Ask AWS Support to add the packages to the prebuilt container",
+      "C": "Add a requirements.txt file that lists the packages to the source_dir that is passed to the estimator",
+      "D": "Switch to a SageMaker AI built-in algorithm"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "prebuilt container",
+        "script mode",
+        "two additional PyPI packages",
+        "simplest"
+      ],
+      "signal": "Quelques dependances pip en plus -> requirements.txt dans source_dir ; changement profond (librairies systeme) -> etendre l'image prebuilt",
+      "pieges": {
+        "A": "Construire un conteneur from scratch est la solution la plus lourde",
+        "B": "AWS ne personnalise pas les conteneurs a la demande",
+        "D": "Un algorithme integre ne permet pas d'executer le script PyTorch"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 1,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Les conteneurs de frameworks SageMaker installent automatiquement les paquets listes dans un requirements.txt present dans le source_dir avant de lancer le script. Si les dependances sont lourdes (librairies systeme, temps d'installation long a chaque job) ou si le job n'a pas d'acces internet, on etend plutot l'image prebuilt avec un Dockerfile FROM et on la pousse dans Amazon ECR.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.2.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 349,
+    "question": "A company deploys a SageMaker AI real-time endpoint in private subnets of a VPC that has no internet gateway or NAT gateway. The endpoint fails to start because it cannot download the model artifacts from Amazon S3. In addition, applications in the same VPC must invoke the endpoint privately. Which actions should the ML engineer take? (Choose two.)",
+    "options": {
+      "A": "Create an Amazon S3 gateway VPC endpoint and add it to the route tables of the private subnets",
+      "B": "Attach an internet gateway to the VPC",
+      "C": "Create an interface VPC endpoint for the SageMaker Runtime API (sagemaker.runtime)",
+      "D": "Make the model artifacts public in Amazon S3",
+      "E": "Move the endpoint to a public subnet"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "private subnets, no internet or NAT",
+        "cannot download model artifacts from S3",
+        "invoke privately"
+      ],
+      "signal": "Acces S3 sans internet -> gateway endpoint S3 ; appel InvokeEndpoint prive -> interface endpoint sagemaker.runtime",
+      "pieges": {
+        "B": "Une internet gateway expose le VPC, contraire a l'architecture privee",
+        "D": "Rendre des artefacts publics est une faille de securite, et la route vers S3 manque toujours",
+        "E": "Un sous-reseau public ne respecte pas l'exigence d'isolation"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 5,
+        "haute_dispo": 1,
+        "performance": 2,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Dans un VPC sans internet, l'endpoint SageMaker a besoin d'une route privee vers S3 pour telecharger model.tar.gz : le gateway endpoint S3 la fournit gratuitement. Pour que les applications appellent InvokeEndpoint sans quitter le reseau AWS, il faut une interface VPC endpoint (PrivateLink) pour com.amazonaws.<region>.sagemaker.runtime. Les security groups doivent autoriser le HTTPS.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.2.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 350,
+    "question": "An ML engineer must deploy a trained model to a real-time endpoint by using Boto3 only (low-level API), as part of a deployment script. In which order must the engineer call the SageMaker API operations?",
+    "options": {
+      "A": "create_endpoint, then create_endpoint_config, then create_model",
+      "B": "create_endpoint_config, then create_model, then create_endpoint",
+      "C": "create_model, then create_endpoint, then create_endpoint_config",
+      "D": "create_model, then create_endpoint_config, then create_endpoint"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "Boto3 low-level API",
+        "deploy to real-time endpoint",
+        "order of calls"
+      ],
+      "signal": "Model (image + artefacts + role) -> EndpointConfig (variants, instances) -> Endpoint",
+      "pieges": {
+        "A": "L'endpoint a besoin d'une configuration existante, qui elle-meme reference un modele existant",
+        "B": "La configuration reference un ModelName qui doit deja exister",
+        "C": "create_endpoint exige un EndpointConfigName existant"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 3
+      }
+    },
+    "explication": "create_model enregistre l'image d'inference, l'emplacement des artefacts dans S3 et le role d'execution. create_endpoint_config definit les production variants (modele, type et nombre d'instances, poids). create_endpoint deploie l'infrastructure a partir de cette configuration. Pour mettre a jour un endpoint, on cree une nouvelle configuration puis on appelle update_endpoint.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.2.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 351,
+    "question": "A company uses a SageMaker AI asynchronous inference endpoint to process document-analysis requests that arrive in bursts a few times per day. Between bursts, there is no traffic. The company wants to pay nothing for instances when the queue is empty and to scale out automatically when requests accumulate. How should the ML engineer configure auto scaling?",
+    "options": {
+      "A": "Set the minimum capacity to 0 and use a scaling policy based on the ApproximateBacklogSizePerInstance metric",
+      "B": "Set the minimum capacity to 1 and scale on CPUUtilization",
+      "C": "Scale on the InvocationsPerInstance metric with a minimum capacity of 2",
+      "D": "Use a scheduled action that starts 10 instances every hour"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "asynchronous inference",
+        "bursts, no traffic in between",
+        "pay nothing when empty",
+        "requests accumulate"
+      ],
+      "signal": "Async inference -> scaler sur la file d'attente (ApproximateBacklogSizePerInstance) avec MinCapacity = 0",
+      "pieges": {
+        "B": "Une instance minimum est facturee en permanence, et le CPU ne mesure pas la file d'attente",
+        "C": "Deux instances minimum coutent meme sans trafic",
+        "D": "Une planification fixe ne suit pas des pics irreguliers et paie des instances inutiles"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Les endpoints asynchrones mettent les requetes en file d'attente et peuvent descendre a zero instance. La metrique ApproximateBacklogSizePerInstance (taille de la file divisee par le nombre d'instances) est le bon signal de scaling. Pour repartir de zero, on ajoute une step scaling policy sur HasBacklogWithoutCapacity afin de lancer une premiere instance quand une requete arrive.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.2.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 352,
+    "question": "An ML engineer updates the model behind a business-critical SageMaker AI real-time endpoint. The engineer wants to first send 10% of traffic to the new model for 15 minutes and then shift all traffic, with an automatic rollback if the error rate or latency increases during the rollout. Which configuration meets these requirements with the LEAST effort?",
+    "options": {
+      "A": "Update the endpoint with an all-at-once blue/green deployment and monitor CloudWatch manually",
+      "B": "Create a second endpoint and change the application code to call it",
+      "C": "Use a shadow test with the new model as the shadow variant",
+      "D": "Use SageMaker deployment guardrails with blue/green canary traffic shifting (10% canary, 15-minute baking period) and Amazon CloudWatch alarms configured for auto-rollback"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "10% traffic first",
+        "then shift all",
+        "automatic rollback",
+        "error rate or latency"
+      ],
+      "signal": "Deploiement progressif + rollback automatique sur alarmes -> deployment guardrails (blue/green canary ou linear) + CloudWatch alarms",
+      "pieges": {
+        "A": "All-at-once envoie 100% du trafic d'un coup, et une surveillance manuelle n'est pas un rollback automatique",
+        "B": "Modifier le code client est risque et ne fournit ni bascule progressive ni rollback",
+        "C": "Un shadow test ne sert jamais de reponses du nouveau modele aux utilisateurs : ce n'est pas un deploiement"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 5,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Les deployment guardrails de SageMaker effectuent un deploiement blue/green avec bascule du trafic all-at-once, canary (une petite portion puis le reste) ou linear (par paliers). Pendant le baking period, SageMaker surveille les alarmes CloudWatch indiquees ; si l'une se declenche, le trafic revient automatiquement sur l'ancienne flotte.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.3.1",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 353,
+    "question": "A data engineering team already orchestrates more than 200 data pipelines as Apache Airflow DAGs. The ML team wants to add steps that launch SageMaker AI processing, training, and batch transform jobs inside these existing DAGs, without operating its own Airflow infrastructure. What should the ML engineer do?",
+    "options": {
+      "A": "Rewrite all pipelines in SageMaker Pipelines",
+      "B": "Run Airflow on a single Amazon EC2 instance",
+      "C": "Use Amazon Managed Workflows for Apache Airflow (Amazon MWAA) and use the SageMaker operators from the Amazon provider package in the DAGs",
+      "D": "Trigger the SageMaker jobs manually after each DAG completes"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "already Airflow DAGs",
+        "add SageMaker steps",
+        "no own Airflow infrastructure"
+      ],
+      "signal": "Orchestration Airflow existante + service gere -> Amazon MWAA + operateurs SageMaker (SageMakerTrainingOperator...)",
+      "pieges": {
+        "A": "Reecrire 200 pipelines est un effort enorme et inutile",
+        "B": "Un Airflow auto-heberge sur EC2 est a operer, sans haute disponibilite",
+        "D": "Une intervention manuelle n'est pas de l'orchestration"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 1,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Amazon MWAA heberge Apache Airflow de facon geree (scaling des workers, mises a jour, haute disponibilite). Le package provider Amazon fournit des operateurs SageMaker prets a l'emploi (processing, training, tuning, transform, model, endpoint) qui s'inserent directement dans les DAG existants. On garde ainsi un seul orchestrateur pour les donnees et le ML.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.3.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 354,
+    "question": "An ML engineer is designing the automated tests of a CI/CD pipeline that builds a preprocessing library, retrains a model, and deploys it to a SageMaker AI endpoint. Which tests should the pipeline include before the model reaches production? (Choose three.)",
+    "options": {
+      "A": "Unit tests of the preprocessing functions, run in AWS CodeBuild on every commit",
+      "B": "A model evaluation gate that fails the pipeline if the new model's metric is worse than the current production model on a holdout dataset",
+      "C": "A load test against the production endpoint after all traffic has been shifted",
+      "D": "An integration test that deploys the model to a staging endpoint and validates sample inference requests and response schemas",
+      "E": "A manual review of every training log line",
+      "F": "Disabling tests to speed up deployment"
+    },
+    "answer": "A, B, D",
+    "radar": {
+      "declencheurs": [
+        "automated tests",
+        "CI/CD",
+        "before production",
+        "choose three"
+      ],
+      "signal": "Pyramide de tests MLOps : tests unitaires du code -> quality gate sur les metriques du modele -> test d'integration en staging",
+      "pieges": {
+        "C": "Un test de charge apres la bascule complete arrive trop tard : il doit se faire en staging",
+        "E": "Une revue manuelle exhaustive n'est ni automatisee ni scalable",
+        "F": "Supprimer les tests laisse passer les regressions en production"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 1,
+        "haute_dispo": 4,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Une chaine CI/CD ML robuste combine trois niveaux. Les tests unitaires valident le code de pretraitement a chaque commit. Une quality gate (par exemple une ConditionStep dans SageMaker Pipelines) bloque un modele moins bon que celui en production. Un test d'integration sur un endpoint de staging verifie le deploiement, le format des requetes et des reponses et la latence, avant une approbation pour la production.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.3.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 355,
+    "question": "A SageMaker AI endpoint is monitored by a SageMaker Model Monitor data quality schedule. The company wants retraining to start automatically whenever Model Monitor detects drift violations, with the LEAST custom code. What should the ML engineer do?",
+    "options": {
+      "A": "Ask an engineer to check the Model Monitor reports every morning",
+      "B": "Create a CloudWatch alarm on the drift metrics that Model Monitor publishes, and an Amazon EventBridge rule on the alarm state change that starts the SageMaker Pipelines retraining pipeline",
+      "C": "Retrain the model every hour regardless of drift",
+      "D": "Write a Lambda function that parses the endpoint's data capture files every minute"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "Model Monitor drift violations",
+        "retraining automatically",
+        "least custom code"
+      ],
+      "signal": "Derive detectee -> metriques CloudWatch publiees par Model Monitor -> alarme -> EventBridge -> StartPipelineExecution",
+      "pieges": {
+        "A": "Une verification manuelle n'est pas automatique",
+        "C": "Reentrainer toutes les heures gaspille du calcul quand il n'y a pas de derive",
+        "D": "Reimplementer la detection de derive duplique ce que fait deja Model Monitor"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 2,
+        "performance": 4,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Model Monitor peut publier ses metriques de derive dans CloudWatch (publish_cloudwatch_metrics). Une alarme sur ces metriques change d'etat en cas de violation, et une regle EventBridge sur ce changement d'etat peut cibler directement un pipeline SageMaker. La boucle detection -> reentrainement est ainsi entierement geree, sans code.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.3.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 356,
+    "question": "Models are trained and registered in SageMaker Model Registry in a central ML account. They must be deployed to SageMaker AI endpoints in a separate production account. The model artifacts in Amazon S3 are encrypted with a customer managed AWS KMS key. Which actions are required to allow the production account to deploy the registered models? (Choose two.)",
+    "options": {
+      "A": "Add a resource policy to the model package group that grants the production account access to the model packages",
+      "B": "Copy the IAM users from the ML account to the production account",
+      "C": "Make the S3 bucket public",
+      "D": "Grant the production account access to the artifact S3 bucket (bucket policy) and allow it to use the KMS key (key policy kms:Decrypt)",
+      "E": "Disable encryption on the model artifacts"
+    },
+    "answer": "A, D",
+    "radar": {
+      "declencheurs": [
+        "central ML account",
+        "deploy in production account",
+        "Model Registry",
+        "customer managed KMS key"
+      ],
+      "signal": "Deploiement cross-account depuis Model Registry -> resource policy sur le model package group + acces cross-account au bucket S3 et a la cle KMS",
+      "pieges": {
+        "B": "Les utilisateurs IAM ne se copient pas entre comptes et ne donnent pas d'acces aux ressources",
+        "C": "Un bucket public expose les modeles a tout internet",
+        "E": "Desactiver le chiffrement viole les exigences de securite"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Le compte de production doit pouvoir lire la definition du modele (resource policy sur le model package group, ou partage via AWS RAM), puis telecharger les artefacts. Pour cela, la bucket policy doit autoriser le role du compte de production, et la key policy KMS doit lui permettre de dechiffrer. Sans l'acces KMS, le deploiement echoue avec AccessDenied, meme si le bucket est autorise.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.3.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 357,
+    "question": "A company's SageMaker AI training jobs run in a VPC without internet access, with network isolation disabled. The training scripts need internal Python packages built by the platform team, as well as approved public packages from PyPI. Security forbids any direct internet access from the training jobs. What should the ML engineer do?",
+    "options": {
+      "A": "Add a NAT gateway so that pip can reach PyPI",
+      "B": "Upload the packages to a public S3 bucket",
+      "C": "Use AWS CodeArtifact with an upstream connection to PyPI and the internal repository, and reach it from the VPC through CodeArtifact interface VPC endpoints and an S3 gateway endpoint",
+      "D": "Copy the source code of every package into the training script"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "no internet access",
+        "internal Python packages",
+        "approved PyPI packages",
+        "VPC"
+      ],
+      "signal": "Depot prive de paquets + proxy PyPI controle + acces prive depuis le VPC -> AWS CodeArtifact + VPC endpoints",
+      "pieges": {
+        "A": "Un NAT gateway ouvre l'acces direct a internet, ce qui est interdit",
+        "B": "Un bucket public est une faille de securite",
+        "D": "Copier le code des paquets est ingerable et sans gestion des versions"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 5,
+        "haute_dispo": 1,
+        "performance": 1,
+        "op_overhead": 4
+      }
+    },
+    "explication": "AWS CodeArtifact heberge des paquets prives (pip, npm, Maven) et peut servir de proxy vers PyPI via une connexion upstream, en mettant en cache les versions approuvees. Depuis un VPC sans internet, on y accede par les interface endpoints codeartifact.api et codeartifact.repositories, plus un gateway endpoint S3, car les paquets sont stockes dans S3.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.3.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 358,
+    "question": "A company wants to A/B test a new recommendation model against the current model in production on a single SageMaker AI endpoint. 90% of users must receive the current model and 10% the new model, and the team must compare business conversion rates per model. Which actions should the ML engineer take? (Choose two.)",
+    "options": {
+      "A": "Create an endpoint configuration with two production variants and set their initial weights to 0.9 and 0.1",
+      "B": "Deploy the new model as a shadow variant",
+      "C": "Record the InvokedProductionVariant value returned in each inference response together with the user's later conversion events, and compare per-variant metrics",
+      "D": "Create two separate endpoints and let users choose one",
+      "E": "Use a SageMaker AI batch transform job for the new model"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "A/B test",
+        "90% / 10%",
+        "single endpoint",
+        "compare conversion per model"
+      ],
+      "signal": "A/B testing -> production variants avec poids (90/10) + attribution de chaque reponse a son variant pour mesurer le KPI metier",
+      "pieges": {
+        "B": "Un shadow variant ne renvoie jamais ses predictions aux utilisateurs : impossible de mesurer la conversion",
+        "D": "Laisser les utilisateurs choisir introduit un biais de selection et sort du cadre d'un seul endpoint",
+        "E": "Le batch transform n'est pas servi en temps reel aux utilisateurs"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 2,
+        "performance": 4,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Un endpoint peut porter plusieurs production variants dont les poids repartissent le trafic. Chaque reponse InvokeEndpoint indique le variant qui l'a servie (InvokedProductionVariant). En associant cette valeur aux evenements de conversion, on compare un KPI metier par modele, alors que CloudWatch fournit deja les metriques techniques par variant. TargetVariant permet aussi de forcer un variant pour un utilisateur donne.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.1.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 359,
+    "question": "A nightly SageMaker Pipelines execution prepares data, trains, and registers a model. Sometimes a step fails and nobody notices until the next day. The ML team wants to be notified by email within minutes when any execution fails, with the LEAST custom code. What should the ML engineer do?",
+    "options": {
+      "A": "Create an Amazon EventBridge rule that matches the SageMaker Model Building Pipeline Execution Status Change event with status Failed, and target an Amazon SNS topic with an email subscription",
+      "B": "Poll the pipeline status every minute from an EC2 instance",
+      "C": "Check the SageMaker Studio console every morning",
+      "D": "Enable AWS CloudTrail and search the logs manually"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "pipeline step fails",
+        "notified within minutes",
+        "least custom code"
+      ],
+      "signal": "Reagir a un changement d'etat d'une ressource AWS -> EventBridge (evenement de statut d'execution du pipeline) -> SNS",
+      "pieges": {
+        "B": "Le polling depuis EC2 = code et instance a maintenir",
+        "C": "Une verification manuelle n'est pas une alerte",
+        "D": "Une recherche manuelle dans CloudTrail n'est ni rapide ni automatique"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 2,
+        "performance": 1,
+        "op_overhead": 5
+      }
+    },
+    "explication": "SageMaker emet des evenements EventBridge pour les changements d'etat des executions de pipeline et de leurs etapes, ainsi que des jobs de training et de processing. Une regle filtrant currentPipelineExecutionStatus = Failed et ciblant un topic SNS envoie l'alerte en quasi temps reel, sans aucun code.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.1.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 360,
+    "question": "An ML engineer configures SageMaker Model Monitor model quality monitoring for a binary classification endpoint, in order to track accuracy and F1 score over time. The true outcomes become known 3 days after each prediction. What must the engineer set up for model quality monitoring to work?",
+    "options": {
+      "A": "Only a data quality baseline from the training dataset",
+      "B": "SageMaker Clarify SHAP baselines",
+      "C": "CloudWatch ModelLatency alarms",
+      "D": "Data capture on the endpoint, and a process that uploads the ground truth labels to Amazon S3 with the inference ID of each captured prediction so that Model Monitor can merge them"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "model quality monitoring",
+        "accuracy and F1 over time",
+        "true outcomes known 3 days later"
+      ],
+      "signal": "Model quality = comparer predictions et verite terrain -> data capture + ingestion des ground truth labels avec l'inference ID",
+      "pieges": {
+        "A": "La baseline de data quality surveille les distributions d'entree, pas l'exactitude des predictions",
+        "B": "Les baselines SHAP servent a la derive d'attribution des features",
+        "C": "La latence ne mesure pas la qualite des predictions"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Pour calculer accuracy, precision, recall ou F1 en production, Model Monitor doit fusionner les predictions capturees avec les vrais labels. Il faut donc activer la data capture et deposer periodiquement les labels dans S3, chacun associe a l'inferenceId (ou eventId) de la prediction. Le job planifie fusionne les deux sources et compare le resultat a la baseline de qualite.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.1.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 361,
+    "question": "A prediction API is built with Amazon API Gateway, an AWS Lambda function that enriches the request with data from Amazon DynamoDB, and a SageMaker AI endpoint. End-to-end latency is sometimes 3 seconds, and the team cannot determine which component causes the delay. What should the ML engineer use?",
+    "options": {
+      "A": "AWS Config",
+      "B": "Amazon Inspector",
+      "C": "AWS X-Ray tracing on API Gateway and Lambda, with the AWS SDK instrumented so that downstream calls to DynamoDB and SageMaker appear as subsegments",
+      "D": "AWS Trusted Advisor"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "multiple components",
+        "end-to-end latency",
+        "which component causes the delay"
+      ],
+      "signal": "Latence distribuee a decomposer par composant -> AWS X-Ray (traces, segments et subsegments, service map)",
+      "pieges": {
+        "A": "Config suit la configuration des ressources, pas la latence des requetes",
+        "B": "Inspector detecte des vulnerabilites",
+        "D": "Trusted Advisor donne des recommandations de compte, pas des traces de requetes"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 5,
+        "op_overhead": 4
+      }
+    },
+    "explication": "X-Ray suit chaque requete de bout en bout : API Gateway et Lambda emettent des segments, et le SDK AWS instrumente ajoute un subsegment pour chaque appel a DynamoDB ou a InvokeEndpoint. La service map et la timeline montrent immediatement quel appel consomme les 3 secondes.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.2.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 362,
+    "question": "A SageMaker AI real-time endpoint has a high p99 latency. The ML engineer must determine whether the time is spent inside the model container (inference code) or in the SageMaker hosting infrastructure, and display the result on a dashboard. Which CloudWatch metrics should the engineer compare?",
+    "options": {
+      "A": "CPUUtilization and MemoryUtilization",
+      "B": "ModelLatency and OverheadLatency",
+      "C": "Invocations and InvocationsPerInstance",
+      "D": "Invocation4XXErrors and Invocation5XXErrors"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "high latency",
+        "inside the container or in SageMaker infrastructure",
+        "dashboard"
+      ],
+      "signal": "Decomposer la latence d'un endpoint -> ModelLatency (temps dans le conteneur) vs OverheadLatency (surcout SageMaker)",
+      "pieges": {
+        "A": "Les metriques de ressources ne separent pas le temps du modele de celui de la plateforme",
+        "C": "Ce sont des volumes de requetes, pas des latences",
+        "D": "Ce sont des taux d'erreur, pas des latences"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "ModelLatency mesure le temps de traitement de la requete par le conteneur du modele. OverheadLatency mesure le temps ajoute par SageMaker (reception de la requete, authentification, routage, envoi de la reponse). Afficher les deux au percentile p99 sur un dashboard CloudWatch montre si l'optimisation doit porter sur le modele ou sur la configuration de l'endpoint.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.2.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 363,
+    "question": "A company runs several SageMaker AI real-time endpoints 24/7 with steady usage. It also runs SageMaker training jobs daily. The company expects to change instance families and Regions over the next year as models evolve, and it wants to reduce costs by committing to a consistent amount of usage. Which purchasing option should the ML engineer recommend?",
+    "options": {
+      "A": "Amazon EC2 Reserved Instances",
+      "B": "Managed spot instances for the real-time endpoints",
+      "C": "A 1-year SageMaker Savings Plan",
+      "D": "On-Demand pricing with larger instances"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "steady 24/7 usage",
+        "change instance families and Regions",
+        "commit to consistent usage",
+        "SageMaker"
+      ],
+      "signal": "Usage SageMaker regulier + flexibilite famille/region/composant -> SageMaker Savings Plans",
+      "pieges": {
+        "A": "Les Reserved Instances EC2 ne s'appliquent pas aux instances ML gerees par SageMaker",
+        "B": "Les endpoints temps reel ne supportent pas le Spot, qui est reserve a l'entrainement gere",
+        "D": "On-Demand est le tarif le plus cher pour un usage permanent"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Les SageMaker Savings Plans offrent jusqu'a 64% de reduction en echange d'un engagement de depense horaire sur 1 ou 3 ans. La remise s'applique automatiquement a l'usage SageMaker eligible (hosting, training, notebooks, processing...) quels que soient la famille, la taille et la region de l'instance, ce qui laisse de la flexibilite pour faire evoluer les modeles.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.2.6",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 364,
+    "question": "An ML team must fine-tune a large model next month on 16 ml.p5.48xlarge instances for about 10 days. GPU capacity for this instance type is often unavailable On-Demand in the team's Region, and the deadline is fixed. What should the ML engineer do to make sure the capacity is available?",
+    "options": {
+      "A": "Use managed spot training and hope that capacity is available",
+      "B": "Reserve the capacity in advance with a SageMaker AI training plan for the required instance type, count, and duration",
+      "C": "Use a SageMaker AI Savings Plan",
+      "D": "Request a service quota increase only"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "GPU capacity often unavailable",
+        "specific dates and duration",
+        "fixed deadline"
+      ],
+      "signal": "Garantir de la capacite GPU sur une periode precise -> SageMaker training plans (reservation de capacite pour l'entrainement)",
+      "pieges": {
+        "A": "Le Spot n'offre aucune garantie de capacite, encore moins pour des GPU rares",
+        "C": "Un Savings Plan reduit le prix mais ne reserve aucune capacite",
+        "D": "Un quota plus eleve autorise a demander plus d'instances, sans garantir qu'elles soient disponibles"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 4,
+        "performance": 4,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Les SageMaker training plans permettent de reserver a l'avance de la capacite d'instances acceleratrices (par exemple p5, p4d, trn1) pour une periode et un nombre d'instances donnes. Les training jobs ou clusters HyperPod lances avec ce plan utilisent la capacite reservee. Savings Plans et quotas ne garantissent pas la disponibilite.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.2.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 365,
+    "question": "A company uses AWS Organizations with separate development and production accounts for ML. Data scientists in development accounts sometimes launch very expensive GPU instances for experiments. The company wants to prevent the use of any SageMaker AI instance type other than a short approved list in all development accounts, even by account administrators. What should the ML engineer implement?",
+    "options": {
+      "A": "A service control policy (SCP) attached to the development OU that denies SageMaker create actions when the sagemaker:InstanceTypes condition key is not in the approved list",
+      "B": "An AWS Budgets alert",
+      "C": "An IAM policy attached to each data scientist user",
+      "D": "A weekly report in AWS Cost Explorer"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "AWS Organizations",
+        "prevent instance types",
+        "all development accounts",
+        "even administrators"
+      ],
+      "signal": "Garde-fou preventif impossible a contourner par les admins des comptes -> SCP sur l'OU avec la condition sagemaker:InstanceTypes",
+      "pieges": {
+        "B": "Un budget alerte apres coup, il n'empeche pas le lancement",
+        "C": "Une policy IAM peut etre modifiee ou contournee par un administrateur du compte",
+        "D": "Un rapport est reactif, pas preventif"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 4,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Les SCP definissent le maximum de permissions disponibles dans les comptes d'une OU, administrateurs compris. Un Deny sur sagemaker:CreateTrainingJob, CreateNotebookInstance, CreateEndpointConfig, etc., conditionne par ForAnyValue:StringNotLike sur sagemaker:InstanceTypes, bloque tout type d'instance non approuve dans tous les comptes de developpement.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.2.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 366,
+    "question": "A security team requires that every SageMaker AI training job created by data scientists runs inside the company VPC and encrypts its storage volume with a customer managed KMS key. Jobs that do not meet these requirements must be rejected at creation time. Which IAM policy conditions should the ML engineer use? (Choose two.)",
+    "options": {
+      "A": "Deny sagemaker:CreateTrainingJob when the sagemaker:VpcSubnets condition key is null (no VPC configuration)",
+      "B": "Deny s3:GetObject on all buckets",
+      "C": "Deny sagemaker:CreateTrainingJob when the sagemaker:VolumeKmsKey condition key is null or not the approved key ARN",
+      "D": "Allow sagemaker:* on all resources",
+      "E": "Require MFA for the sagemaker:InvokeEndpoint action"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "must run inside VPC",
+        "encrypt volume with customer managed KMS key",
+        "rejected at creation time"
+      ],
+      "signal": "Imposer une configuration a la creation des jobs -> conditions IAM specifiques a SageMaker (sagemaker:VpcSubnets, sagemaker:VolumeKmsKey)",
+      "pieges": {
+        "B": "Bloquer toute lecture S3 empeche l'entrainement sans imposer ni VPC ni KMS",
+        "D": "sagemaker:* sur toutes les ressources est l'inverse du moindre privilege",
+        "E": "Le MFA sur l'inference ne concerne pas la creation des jobs d'entrainement"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 4
+      }
+    },
+    "explication": "SageMaker expose des condition keys qui permettent d'imposer des parametres de securite a la creation des ressources : sagemaker:VpcSubnets et sagemaker:VpcSecurityGroupIds pour le VPC, sagemaker:VolumeKmsKey et sagemaker:OutputKmsKey pour le chiffrement, sagemaker:NetworkIsolation ou sagemaker:InterContainerTrafficEncryption. Un Deny conditionnel rejette toute requete non conforme.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.3.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 367,
+    "question": "A company is onboarding many new data scientists and MLOps engineers to Amazon SageMaker AI. The administrators want to quickly create least-privilege IAM roles for these personas, based on predefined ML activities (for example, running Studio applications, managing experiments, or accessing specific S3 buckets), without writing policies by hand. What should the ML engineer use?",
+    "options": {
+      "A": "The AdministratorAccess managed policy",
+      "B": "Amazon SageMaker Role Manager",
+      "C": "IAM Access Analyzer only",
+      "D": "AWS Organizations SCPs only"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "personas",
+        "least-privilege roles",
+        "predefined ML activities",
+        "without writing policies by hand"
+      ],
+      "signal": "Generer des roles IAM ML au moindre privilege a partir de personas et d'activites -> SageMaker Role Manager",
+      "pieges": {
+        "A": "AdministratorAccess est l'oppose du moindre privilege",
+        "C": "Access Analyzer analyse et affine des policies, il ne cree pas des roles par persona",
+        "D": "Les SCP fixent des limites maximales, elles n'accordent aucune permission"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 5
+      }
+    },
+    "explication": "SageMaker Role Manager propose des personas predefinies (data scientist, MLOps, compute du service) et des activites ML a cocher. Il genere automatiquement les roles et policies IAM correspondants au moindre privilege, avec les restrictions reseau (VPC) et de chiffrement (KMS) souhaitees.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.3.3",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 368,
+    "question": "A SageMaker AI training job fails with an AccessDenied error when it reads training data from an S3 bucket. The execution role has an IAM policy that allows s3:GetObject and s3:ListBucket on the bucket. The bucket uses default encryption with a customer managed AWS KMS key. What is the MOST likely cause?",
+    "options": {
+      "A": "The training instance type is too small",
+      "B": "The bucket must use SSE-S3 for SageMaker to work",
+      "C": "The S3 bucket is in the same Region as the training job",
+      "D": "The execution role is not allowed to use the KMS key (kms:Decrypt is missing from the role policy or the key policy)"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "AccessDenied",
+        "S3 permissions correct",
+        "customer managed KMS key"
+      ],
+      "signal": "Permissions S3 correctes mais AccessDenied sur des objets chiffres SSE-KMS -> verifier kms:Decrypt (policy IAM ET key policy)",
+      "pieges": {
+        "A": "La taille de l'instance ne provoque pas d'AccessDenied",
+        "B": "SageMaker fonctionne avec SSE-KMS, a condition d'avoir l'acces a la cle",
+        "C": "Etre dans la meme region est le cas normal et recommande"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 4,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Lire un objet chiffre avec SSE-KMS exige deux autorisations : s3:GetObject sur l'objet et kms:Decrypt sur la cle. Pour une cle geree par le client, la key policy doit aussi autoriser le role, directement ou en deleguant a IAM. C'est la cause la plus frequente d'AccessDenied quand les permissions S3 semblent correctes.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.3.5",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 369,
+    "question": "Auditors require a bank to maintain, for each production model, a single governance record that documents the intended use, risk rating, training data sources, evaluation results, and approval history. Records must be versioned and exportable as PDF. Which SageMaker AI feature should the ML engineer use?",
+    "options": {
+      "A": "Amazon SageMaker Model Cards",
+      "B": "SageMaker Experiments",
+      "C": "SageMaker Debugger reports",
+      "D": "SageMaker Data Wrangler data insights reports"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "governance record per model",
+        "intended use, risk rating",
+        "versioned",
+        "exportable as PDF",
+        "auditors"
+      ],
+      "signal": "Documentation de gouvernance d'un modele (usage, risque, evaluation, approbation) -> SageMaker Model Cards",
+      "pieges": {
+        "B": "Experiments suit des runs d'entrainement, pas une fiche de gouvernance avec usage prevu et risque",
+        "C": "Les rapports Debugger portent sur le deroulement de l'entrainement",
+        "D": "Les data insights concernent la qualite des donnees, pas la gouvernance du modele"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 4,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 5
+      }
+    },
+    "explication": "SageMaker Model Cards centralise la documentation d'un modele : usage prevu, niveau de risque, details d'entrainement, resultats d'evaluation et informations additionnelles. Les cartes sont versionnees, peuvent etre liees a Model Registry, et s'exportent en PDF pour les auditeurs. Le Model Dashboard donne ensuite une vue d'ensemble de tous les modeles.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.3.4",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 370,
+    "question": "A SageMaker AI processing job must connect to an Amazon RDS for PostgreSQL database to extract features. Today, the database user name and password are hard-coded in the processing script stored in a Git repository. The security team requires removing them from code and rotating the password automatically every 30 days. What should the ML engineer do?",
+    "options": {
+      "A": "Store the credentials in a plain-text file in Amazon S3",
+      "B": "Pass the credentials as environment variables in the job definition stored in Git",
+      "C": "Store the credentials in AWS Secrets Manager with automatic rotation enabled, and grant the processing job's execution role secretsmanager:GetSecretValue to read the secret at runtime",
+      "D": "Encode the password in Base64 in the script"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "hard-coded credentials",
+        "remove from code",
+        "automatic rotation every 30 days",
+        "RDS"
+      ],
+      "signal": "Secret de base de donnees + rotation automatique -> AWS Secrets Manager (rotation native RDS) + lecture via le role d'execution",
+      "pieges": {
+        "A": "Un fichier en clair dans S3 reste un secret expose, sans rotation",
+        "B": "Des variables d'environnement versionnees dans Git exposent toujours le secret",
+        "D": "Base64 est un encodage, pas un chiffrement"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Secrets Manager stocke le secret chiffre avec KMS et propose une rotation automatique native pour RDS (fonction Lambda geree), par exemple tous les 30 jours. Le script recupere le secret au demarrage avec GetSecretValue, grace aux permissions du role d'execution : aucune credential dans le code ni dans Git.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.3.7",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 371,
+    "question": "The traffic of a SageMaker AI endpoint follows a strong daily and weekly pattern. Static CloudWatch alarm thresholds on Invocation5XXErrors and ModelLatency produce many false alarms at peak times and miss real issues at night. What should the ML engineer do to detect abnormal behavior more reliably?",
+    "options": {
+      "A": "Raise all static thresholds by 50%",
+      "B": "Create CloudWatch alarms based on anomaly detection models for these metrics, so that the expected band adapts to the daily and weekly patterns",
+      "C": "Disable alarms during peak hours",
+      "D": "Replace the alarms with a monthly AWS Trusted Advisor report"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "daily and weekly pattern",
+        "static thresholds",
+        "false alarms at peak",
+        "miss issues at night"
+      ],
+      "signal": "Metrique saisonniere -> CloudWatch anomaly detection (bande attendue apprise par ML) au lieu de seuils statiques",
+      "pieges": {
+        "A": "Des seuils plus hauts reduisent les fausses alertes mais ratent encore plus d'incidents la nuit",
+        "C": "Desactiver les alarmes aux heures de pointe supprime la surveillance au pire moment",
+        "D": "Un rapport mensuel ne detecte pas d'incident en temps reel"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 4,
+        "performance": 3,
+        "op_overhead": 5
+      }
+    },
+    "explication": "La detection d'anomalies CloudWatch entraine un modele sur l'historique de la metrique, en tenant compte des cycles horaires, journaliers et hebdomadaires, et produit une bande de valeurs attendues. L'alarme se declenche quand la metrique sort de cette bande. Elle s'adapte ainsi a la charge normale de chaque moment.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.1.2",
+    "source": "mla-c02-genere"
+  },
+  {
+    "id": 372,
+    "question": "Several projects share one AWS account for SageMaker AI training, processing, and hosting. Finance wants a monthly breakdown of SageMaker costs per project in AWS Cost Explorer, with the LEAST manual work. What should the ML engineer do?",
+    "options": {
+      "A": "Create a separate AWS account per notebook",
+      "B": "Divide the total SageMaker bill equally among the projects",
+      "C": "Export the CloudWatch Invocations metric and multiply it by the instance price",
+      "D": "Enforce a 'project' tag on all SageMaker resources (for example, with tag policies or SageMaker Projects), activate it as a cost allocation tag, and group costs by this tag in Cost Explorer"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "shared account",
+        "cost breakdown per project",
+        "Cost Explorer",
+        "least manual work"
+      ],
+      "signal": "Allocation des couts par projet dans un compte partage -> tags imposes + cost allocation tags + regroupement dans Cost Explorer",
+      "pieges": {
+        "A": "Un compte par notebook est une explosion administrative",
+        "B": "Une repartition egale ne reflete pas la consommation reelle",
+        "C": "Le calcul manuel ignore le training, le processing et le stockage, et il est sujet aux erreurs"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Les tags appliques aux jobs, endpoints et domaines SageMaker apparaissent dans la facturation une fois actives comme cost allocation tags. Cost Explorer peut alors grouper et filtrer les couts par projet. Les tag policies d'Organizations, des SCP ou les templates SageMaker Projects garantissent que le tag est toujours present.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.2.10",
     "source": "mla-c02-genere"
   }
 ]

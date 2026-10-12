@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import RichText from './RichText.jsx'
 import { isCorrect, parseLetters } from '../lib/exam.js'
+import { domainClass } from '../lib/certs.js'
 import {
   THEMES,
   THEME_LABELS,
-  TRAINING_BANK,
   buildTrainingSession,
   clearProgress,
   dominantTheme,
@@ -57,10 +57,10 @@ function formatLast(ts) {
   return `il y a ${Math.round(h / 24)} j`
 }
 
-export default function TrainingScreen() {
-  const bank = TRAINING_BANK
+export default function TrainingScreen({ cert }) {
+  const bank = cert.trainingBank
   const [phase, setPhase] = useState('config') // config | run | summary
-  const [progress, setProgress] = useState(loadProgress)
+  const [progress, setProgress] = useState(() => loadProgress(cert.progressKey))
 
   // Session settings
   const [theme, setTheme] = useState('all')
@@ -85,6 +85,7 @@ export default function TrainingScreen() {
   const [revealed, setRevealed] = useState(false)
   const [results, setResults] = useState([]) // [{ q, selected, ok }]
 
+  const maxId = useMemo(() => bank.reduce((m, q) => Math.max(m, q.id), 0), [bank])
   const parsedFrom = rangeFrom === '' ? null : Math.max(1, parseInt(rangeFrom, 10) || 1)
   const parsedTo = rangeTo === '' ? null : Math.max(1, parseInt(rangeTo, 10) || 1)
   const cfg = { theme, status, qtype, count, order, rangeFrom: parsedFrom, rangeTo: parsedTo }
@@ -92,7 +93,7 @@ export default function TrainingScreen() {
     () => filterBank(bank, progress, cfg),
     [bank, progress, theme, status, qtype, parsedFrom, parsedTo],
   )
-  const lastSeries = useMemo(() => loadLastSession(bank), [bank, phase])
+  const lastSeries = useMemo(() => loadLastSession(cert.lastSessionKey, bank), [bank, phase])
 
   const stats = useMemo(() => {
     let seen = 0
@@ -110,7 +111,7 @@ export default function TrainingScreen() {
 
   function launch(list, { save = false } = {}) {
     if (!list || list.length === 0) return
-    if (save) saveLastSession(list)
+    if (save) saveLastSession(cert.lastSessionKey, list)
     setSession(list)
     setIndex(0)
     setSelected([])
@@ -129,7 +130,7 @@ export default function TrainingScreen() {
   }
 
   function replayLastSeries() {
-    launch(loadLastSession(bank))
+    launch(loadLastSession(cert.lastSessionKey, bank))
   }
 
   const q = session[index]
@@ -153,7 +154,7 @@ export default function TrainingScreen() {
     setResults((r) => [...r, { q, selected, ok }])
     setProgress((p) => {
       const next = recordAnswer(p, q.id, ok)
-      saveProgress(next)
+      saveProgress(cert.progressKey, next)
       return next
     })
     setRevealed(true)
@@ -176,8 +177,8 @@ export default function TrainingScreen() {
   }
 
   function resetProgress() {
-    if (!window.confirm('Réinitialiser toute la progression d’entraînement ?')) return
-    clearProgress()
+    if (!window.confirm(`Réinitialiser toute la progression d’entraînement ${cert.code} ?`)) return
+    clearProgress(cert.progressKey)
     setProgress({})
   }
 
@@ -206,7 +207,7 @@ export default function TrainingScreen() {
     return (
       <main className="screen">
         <section className="card">
-          <h2>🧪 Mode entraînement</h2>
+          <h2>🧪 Mode entraînement · {cert.code}</h2>
           <p className="muted">
             Apprends question par question avec correction immédiate : signal à repérer,
             pièges de chaque option et explication détaillée. Ta progression est
@@ -318,7 +319,7 @@ export default function TrainingScreen() {
               <input
                 type="number"
                 min="1"
-                max={bank.length}
+                max={maxId}
                 placeholder="1"
                 value={rangeFrom}
                 onChange={(e) => setRangeFrom(e.target.value)}
@@ -327,8 +328,8 @@ export default function TrainingScreen() {
               <input
                 type="number"
                 min="1"
-                max={bank.length}
-                placeholder={String(bank.length)}
+                max={maxId}
+                placeholder={String(maxId)}
                 value={rangeTo}
                 onChange={(e) => setRangeTo(e.target.value)}
               />
@@ -545,6 +546,7 @@ export default function TrainingScreen() {
                   {open && (
                     <div className="track-detail">
                       <div className="badges-row">
+                        {tq.domain && <span className={`domain-badge ${domainClass(tq.domain)}`}>{tq.domain}</span>}
                         {tk && <span className="theme-badge">{THEME_LABELS[tk]}</span>}
                         {p && (
                           <span className="theme-badge">
@@ -670,6 +672,7 @@ export default function TrainingScreen() {
 
         <div className="card question-card">
           <div className="badges-row">
+            {q.domain && <span className={`domain-badge ${domainClass(q.domain)}`}>{q.domain}</span>}
             {themeKey && <span className="theme-badge">{THEME_LABELS[themeKey]}</span>}
             <span className="theme-badge id-badge">#{q.id}</span>
             {multi && (

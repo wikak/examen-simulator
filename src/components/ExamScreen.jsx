@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { domainClass, formatTime, isMultiAnswer, parseLetters } from '../lib/exam.js'
+import { formatTime, isMultiAnswer, parseLetters } from '../lib/exam.js'
+import { domainClass } from '../lib/certs.js'
 import RichText from './RichText.jsx'
 
 export default function ExamScreen({ exam, timed, timeLimit, onSubmit, onQuit }) {
