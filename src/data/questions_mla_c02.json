@@ -4267,7 +4267,7 @@
     "question": "A data scientist ingests GZIP-compressed records from an on-premises application using Amazon Kinesis Data Firehose. The scientist wants to run SQL queries on the data in real time to gain immediate insights. Which setup will allow querying with the lowest latency?",
     "options": {
       "A": "Store the records in Amazon S3 and run queries with Amazon Athena.",
-      "B": "Use Kinesis Data Analytics to query the stream, optionally transforming data with AWS Lambda.",
+      "B": "Use Amazon Managed Service for Apache Flink (formerly Kinesis Data Analytics) to query the stream with SQL, optionally transforming data with AWS Lambda.",
       "C": "Transform the data via AWS Glue streaming ETL from the Firehose stream.",
       "D": "Deliver the data to an Amazon OpenSearch cluster using the Kinesis Client Library for real-time querying."
     },
@@ -4291,7 +4291,7 @@
         "op_overhead": 3
       }
     },
-    "explication": "Amazon Kinesis Data Analytics permet d'executer des requetes SQL directement sur le flux de donnees en temps reel (avec une transformation Lambda optionnelle en amont si besoin), evitant le delai de livraison/buffering qu'impliquerait un passage prealable par S3 avant de pouvoir interroger les donnees avec Athena.",
+    "explication": "Amazon Kinesis Data Analytics permet d'executer des requetes SQL directement sur le flux de donnees en temps reel (avec une transformation Lambda optionnelle en amont si besoin), evitant le delai de livraison/buffering qu'impliquerait un passage prealable par S3 avant de pouvoir interroger les donnees avec Athena. Note : Kinesis Data Analytics for SQL a ete retire en janvier 2026 ; son successeur est Amazon Managed Service for Apache Flink, qui supporte aussi les requetes SQL (Flink SQL).",
     "domain": "Data Preparation for ML and AI"
   },
   {
@@ -9998,36 +9998,37 @@
   },
   {
     "id": 313,
-    "question": "A computer vision training job on Amazon SageMaker AI reads 12 million small JPEG images (about 50 KB each) from Amazon S3 in File mode. The job spends most of its time downloading data before training starts, and GPU utilization stays low. Which actions will improve data loading performance? (Choose two.)",
+    "question": "A team retrains a computer vision model every day on the same 12 million small JPEG images (about 50 KB each) stored in Amazon S3, using File mode. Each job spends most of its time downloading data before training starts, and GPU utilization stays low. Which actions will improve data loading performance? (Choose two.)",
     "options": {
       "A": "Pack the images into larger shard files (for example, RecordIO, TFRecord, or WebDataset tar shards of 100 MB to 1 GB)",
       "B": "Use a larger GPU instance type",
-      "C": "Use FastFile mode so that the job streams the data from S3 instead of downloading the full dataset before training",
-      "D": "Store the images in Amazon S3 Glacier Instant Retrieval",
+      "C": "Create an Amazon FSx for Lustre file system linked to the S3 bucket and mount it in the training jobs, so that objects are cached after the first access",
+      "D": "Switch the input to FastFile mode while keeping the 12 million small objects",
       "E": "Increase the number of training epochs"
     },
     "answer": "A, C",
     "radar": {
       "declencheurs": [
         "millions of small files",
-        "File mode downloads first",
+        "same dataset every day",
+        "download before training",
         "low GPU utilization"
       ],
-      "signal": "Goulot d'E/S sur des petits fichiers -> regrouper en shards volumineux + streaming (FastFile/Pipe) au lieu d'un telechargement prealable",
+      "signal": "Petits fichiers + repetition quotidienne -> regrouper en gros shards (correction durable) ou FSx for Lustre lie a S3 (cache apres le premier acces)",
       "pieges": {
         "B": "Un GPU plus puissant attendra encore plus les donnees : le goulot est l'E/S, pas le calcul",
-        "D": "Glacier IR est une classe d'archivage, plus chere en lecture et sans gain de debit",
+        "D": "FastFile vise les gros fichiers ; avec des objets de 50 Ko, le cout par requete domine et le gain est faible",
         "E": "Plus d'epoques allonge l'entrainement sans regler le chargement"
       },
       "scores": {
-        "cout": 4,
+        "cout": 3,
         "securite": 0,
         "haute_dispo": 0,
         "performance": 5,
         "op_overhead": 3
       }
     },
-    "explication": "Chaque requete S3 a une latence fixe : lire 12 millions de petits objets coute bien plus que lire quelques milliers de gros fichiers. Regrouper les images en shards augmente le debit effectif. FastFile mode expose les objets S3 comme des fichiers locaux et les lit en streaming, ce qui permet de demarrer l'entrainement sans attendre le telechargement complet.",
+    "explication": "Chaque requete S3 a une latence fixe : lire des millions de petits objets coute bien plus que lire quelques milliers de gros fichiers, et FastFile n'y change presque rien. Regrouper les images en shards de dizaines a centaines de Mo est la correction durable. FSx for Lustre lie au bucket est la correction quand le jeu est relu souvent : les objets sont mis en cache au premier acces, et les entrainements suivants ne paient plus le telechargement (VPC requis).",
     "domain": "Data Preparation for ML and AI",
     "skill": "1.1.3",
     "source": "mla-c02-genere"
@@ -12141,5 +12142,1784 @@
     "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
     "skill": "4.2.10",
     "source": "mla-c02-genere"
+  },
+  {
+    "id": 373,
+    "question": "A retail company wants to automatically detect whether customer reviews are positive, negative, or neutral, in English and Spanish. The team has no data scientists and no labeled data, and wants results in production within two weeks with the LEAST development effort. Which approach should the ML engineer recommend?",
+    "options": {
+      "A": "Fine-tune a foundation model on Amazon Bedrock with a few thousand manually labeled reviews",
+      "B": "Use Amazon Comprehend sentiment analysis through its API",
+      "C": "Train a BlazingText classifier on Amazon SageMaker AI after labeling reviews with Ground Truth",
+      "D": "Deploy an open-source sentiment model from SageMaker JumpStart to a real-time endpoint"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "no data scientists",
+        "no labeled data",
+        "two weeks",
+        "least development effort",
+        "common task (sentiment)"
+      ],
+      "signal": "Tache courante deja resolue par un service d'IA pre-entraine -> premier echelon de l'echelle : Amazon Comprehend",
+      "pieges": {
+        "A": "Le fine-tuning demande des exemples etiquetes et une expertise que l'equipe n'a pas, pour un probleme deja resolu",
+        "C": "Etiqueter puis entrainer est l'echelon le plus couteux de l'echelle",
+        "D": "JumpStart implique d'heberger et d'operer un endpoint, alors qu'un simple appel d'API suffit"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 3,
+        "op_overhead": 5
+      }
+    },
+    "explication": "On monte l'echelle par le bas : service d'IA pre-entraine, puis FM Bedrock avec un bon prompt, puis customisation, puis JumpStart, et seulement ensuite entrainement maison. Comprehend detecte le sentiment dans plusieurs langues, sans entrainement, sans labels et sans endpoint a gerer. C'est l'option la plus geree qui satisfait le besoin.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.1.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 374,
+    "question": "A telecom company recomputes a churn risk score for 8 million subscribers every Sunday night. The scores are loaded into a CRM on Monday morning. No user or application waits for an individual prediction. Which inference option is the MOST cost-effective?",
+    "options": {
+      "A": "A SageMaker AI real-time endpoint with auto scaling, invoked by an AWS Step Functions Map state",
+      "B": "A SageMaker AI serverless inference endpoint invoked 8 million times",
+      "C": "A SageMaker AI batch transform job that reads the input from Amazon S3 and writes the scores to Amazon S3",
+      "D": "A SageMaker AI asynchronous inference endpoint with a minimum capacity of 1"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "8 million records",
+        "every Sunday night",
+        "no one waits for an individual prediction"
+      ],
+      "signal": "Personne n'attend de reponse individuelle -> inference batch (batch transform), pas d'endpoint",
+      "pieges": {
+        "A": "Un endpoint persistant appele en boucle : mauvaise forme de solution, meme bien dimensionne",
+        "B": "8 millions d'invocations separees, avec cold starts, pour produire un seul fichier",
+        "D": "L'asynchrone sert des requetes individuelles volumineuses ; une capacite minimale de 1 facture en permanence"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "La question a se poser : qui attend ? Si personne n'attend une prediction unitaire, un endpoint temps reel n'a pas sa place. Batch transform demarre l'infrastructure, traite tout le jeu de donnees depuis S3, ecrit les resultats dans S3 puis s'arrete : on ne paie que la duree du traitement.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.1.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 375,
+    "question": "A pharmaceutical company wants an assistant that answers questions about its standard operating procedures (SOPs). The quality team revises SOPs every week, each answer must reference the SOP it is based on, and some SOPs are visible only to specific departments. Which approach BEST meets these requirements?",
+    "options": {
+      "A": "Fine-tune a foundation model on all SOPs after each revision",
+      "B": "Use continued pre-training on the SOP corpus once per quarter",
+      "C": "Retrieval Augmented Generation over the SOP documents, with metadata filters based on the user's department",
+      "D": "Include every SOP in the system prompt of each request"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "revised every week",
+        "must reference the SOP",
+        "visible only to specific departments"
+      ],
+      "signal": "Probleme de connaissance + contenu changeant + citations + acces different par utilisateur -> RAG avec filtres de metadonnees",
+      "pieges": {
+        "A": "Fine-tuner sur des faits qui changent est le mauvais reflexe classique : toujours en retard, et sans citations",
+        "B": "Encore plus lourd que le fine-tuning, avec les memes defauts (obsolete, pas de citation)",
+        "D": "Depasse vite la fenetre de contexte, coute tout le corpus a chaque question et ignore les droits d'acces"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 4,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Probleme de connaissance -> recuperation ; probleme de comportement -> fine-tuning. Ici, les quatre signaux (contenu qui change, citation, acces par departement, mise a jour par des non-ingenieurs) pointent vers le RAG. Les metadonnees de chaque document permettent de filtrer les passages recuperes selon le departement de l'utilisateur.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.1.5",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 376,
+    "question": "A credit scoring model deployed on a SageMaker AI endpoint six months ago has become steadily less accurate. No new model version or configuration was deployed, and CloudWatch shows normal latency and no errors. What should the ML engineer do FIRST?",
+    "options": {
+      "A": "Roll back the endpoint to the previous model version",
+      "B": "Compare the distribution of recent inference inputs with the training data baseline to check for data drift",
+      "C": "Move the endpoint to a larger instance type",
+      "D": "Retrain immediately on the last six months of data without further analysis"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "accuracy steadily decreasing",
+        "nothing deployed",
+        "latency and errors normal",
+        "FIRST"
+      ],
+      "signal": "Precision en baisse + aucun deploiement + infra saine = etape Operate : diagnostiquer la derive avant de corriger",
+      "pieges": {
+        "A": "Il n'y a rien a annuler : aucun deploiement n'a eu lieu",
+        "C": "Regle un probleme de latence explicitement absent",
+        "D": "Corrige avant de connaitre la cause, et risque d'integrer un changement d'entrees non compris"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Un modele se degrade naturellement : derive des donnees (les entrees changent) ou derive de concept (la relation change). Aucune erreur n'apparait dans les logs. La premiere etape est de comparer les entrees recentes a la distribution d'entrainement (par exemple avec Model Monitor). Ce diagnostic dit si un reentrainement aidera, et sur quelles donnees.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.1.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 377,
+    "question": "An insurance company processes claims with a fixed sequence: extract fields with Amazon Textract, validate them against a policy database, score fraud risk with a SageMaker AI endpoint, and route the claim to an approval queue. The sequence never changes. A developer proposes building an AI agent that decides which step to run next. What should the ML engineer recommend?",
+    "options": {
+      "A": "Build the agent with Amazon Bedrock AgentCore so that it can adapt to new claims",
+      "B": "Build a multi-agent system with one agent per step",
+      "C": "Use an LLM to generate the workflow dynamically for each claim",
+      "D": "Implement the fixed sequence as an AWS Step Functions workflow"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "fixed sequence",
+        "never changes",
+        "agent decides next step"
+      ],
+      "signal": "Si le workflow se dessine en organigramme fixe -> Step Functions ; un agent ne se justifie que si le chemin varie vraiment",
+      "pieges": {
+        "A": "Un agent ajoute des appels de modele imprevisibles et de nouveaux modes de panne pour un chemin toujours identique",
+        "B": "Encore plus de complexite et de cout de coordination sans aucun benefice",
+        "C": "Generer dynamiquement un workflow fixe rend le systeme non deterministe et plus cher"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Un agent choisit ses propres etapes, ce qui est utile quand le chemin varie selon la demande. En contrepartie, son cout devient imprevisible (nombre d'appels au modele variable) et de nouveaux modes de panne apparaissent (echecs d'outils, de coordination). Pour une sequence fixe, Step Functions est deterministe, observable et moins cher.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows",
+    "skill": "3.1.6",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 378,
+    "question": "A team must keep every past training dataset for 7 years for regulatory audits. These datasets are almost never read; if an audit happens, a restore time of 48 hours is acceptable. Active training data is read daily. Which storage configuration is the MOST cost-effective?",
+    "options": {
+      "A": "Keep all data in S3 Standard",
+      "B": "Keep active data in S3 Standard and move archived datasets to S3 Glacier Deep Archive with an S3 Lifecycle rule",
+      "C": "Store all data in S3 Express One Zone",
+      "D": "Store archived datasets on Amazon EFS with the Infrequent Access storage class"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "keep 7 years",
+        "almost never read",
+        "48-hour restore acceptable",
+        "active data read daily"
+      ],
+      "signal": "Donnees d'entrainement actives -> S3 Standard ; conservation de conformite rarement lue -> Glacier Deep Archive via Lifecycle",
+      "pieges": {
+        "A": "Payer le tarif Standard pendant 7 ans pour des donnees jamais lues",
+        "C": "Express One Zone est la classe la plus chere au Go, faite pour des taux de requetes eleves, et mono-AZ",
+        "D": "EFS est un systeme de fichiers, bien plus cher que l'archivage S3"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 1,
+        "haute_dispo": 1,
+        "performance": 1,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Les classes d'archivage servent a conserver des donnees, pas a entrainer dessus : leur delai de restauration les rend inutilisables pendant un job. Glacier Deep Archive est la classe la moins chere, avec une restauration en quelques heures, ce qui convient a un audit. Une regle Lifecycle deplace automatiquement les anciens jeux de donnees, sans code.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 379,
+    "question": "A compliance policy requires that all SageMaker AI training output and checkpoints be encrypted at rest with a customer managed AWS KMS key. To speed up checkpoint writes, an engineer proposes writing the training output to an Amazon S3 Express One Zone directory bucket. How should the ML engineer respond?",
+    "options": {
+      "A": "Approve it and add a bucket policy that requires the KMS key on every PUT",
+      "B": "Approve it and replicate the directory bucket to another Availability Zone",
+      "C": "Reject it, because SSE-KMS is not supported for SageMaker AI output in directory buckets; keep a general purpose bucket with SSE-KMS",
+      "D": "Approve it and encrypt the checkpoints in the training script before writing them"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "customer managed KMS key required",
+        "S3 Express One Zone",
+        "directory bucket",
+        "training output"
+      ],
+      "signal": "Exigence de conformite + limitation documentee du service -> la limitation l'emporte : bucket general purpose avec SSE-KMS",
+      "pieges": {
+        "A": "Une policy ne peut pas activer une fonctionnalite non supportee ; elle ferait echouer les ecritures de SageMaker",
+        "B": "Corrige la faiblesse mono-AZ, pas le blocage de chiffrement",
+        "D": "Remplace un controle gere (rotation, audit, grants KMS) par du code maison, ce que les auditeurs n'acceptent pas comme equivalent"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 5,
+        "haute_dispo": 1,
+        "performance": 1,
+        "op_overhead": 3
+      }
+    },
+    "explication": "S3 Express One Zone utilise des directory buckets mono-AZ, concus pour des taux de requetes tres eleves. Il a une limite piege : SSE-KMS n'est pas supporte pour les sorties de SageMaker AI dans ces buckets. Face a une exigence de cle KMS geree par le client, il faut changer de service (bucket general purpose), pas inventer un contournement.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 380,
+    "question": "A team stores 6 TB of audio files in Amazon S3, each about 1.5 GB. Each new batch of files is used for training only once. Training jobs spend 40 minutes downloading data before the first epoch, and the team has no VPC networking experience. What is the simplest change to remove most of this delay?",
+    "options": {
+      "A": "Create an Amazon FSx for Lustre file system linked to the bucket and mount it in the training job",
+      "B": "Switch the training input to FastFile mode",
+      "C": "Copy the files to Amazon EFS before each training job",
+      "D": "Increase the EBS volume size of the training instances"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "large files (1.5 GB)",
+        "used once",
+        "long download before first epoch",
+        "no VPC experience",
+        "simplest change"
+      ],
+      "signal": "Gros fichiers (> 50 Mo) lus une seule fois + delai de demarrage -> FastFile mode (un parametre, ni VPC ni systeme de fichiers)",
+      "pieges": {
+        "A": "FSx paie sur la repetition ; ici les donnees ne sont jamais relues, et il faut un VPC que l'equipe ne maitrise pas",
+        "C": "Deplace l'attente (copie) au lieu de la supprimer, et EFS exige aussi un VPC",
+        "D": "La taille du volume n'est pas la cause : c'est le telechargement prealable du File mode"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 5
+      }
+    },
+    "explication": "En File mode, SageMaker telecharge tout le jeu de donnees avant de lancer le script. FastFile expose les objets S3 comme des fichiers et les lit en streaming a la demande : l'entrainement demarre immediatement. AWS recommande d'essayer FastFile en premier pour de gros fichiers (au-dela de 50 Mo). Il ne faut ni systeme de fichiers ni VPC.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 381,
+    "question": "A research team retrains a model every day on the same 10 TB dataset of 200 million small image files (about 50 KB each) stored in Amazon S3. Each job waits more than an hour for data before training. The team cannot change the upstream pipeline that produces the files. What should the ML engineer recommend?",
+    "options": {
+      "A": "Switch to FastFile mode",
+      "B": "Increase the EBS volume of each training instance",
+      "C": "Move the images to S3 Glacier Instant Retrieval",
+      "D": "Create an Amazon FSx for Lustre file system linked to the S3 bucket and mount it in the training jobs (inside a VPC)"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "millions of small files",
+        "same dataset every day",
+        "cannot change the pipeline"
+      ],
+      "signal": "Petits fichiers + repetition quotidienne + impossible de reorganiser les donnees -> FSx for Lustre lie a S3 (cache apres le premier acces)",
+      "pieges": {
+        "A": "FastFile vise les gros fichiers ; avec des objets de 50 Ko, le cout par requete domine et le gain est faible",
+        "B": "Le goulot n'est pas l'espace disque mais des centaines de millions de requetes",
+        "C": "Classe d'archivage : ajoute des frais de recuperation sur des donnees d'entrainement actives"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "FSx for Lustre lie a un bucket S3 copie les objets au premier acces puis les garde en cache : les executions suivantes ne paient plus le telechargement, et Lustre gere tres bien les nombreux petits fichiers. Regrouper les fichiers en gros shards serait la correction durable, mais elle est impossible ici car la chaine amont ne peut pas changer. FSx demande un VPC et un sous-reseau dans la meme AZ.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 382,
+    "question": "A fraud model is retrained once a month on a 150 GB dataset; each run takes about 15 minutes. Two years ago the team created a 1.2 TB Amazon FSx for Lustre file system for this model, and finance now flags it as a large recurring cost. What is the MOST cost-effective change?",
+    "options": {
+      "A": "Lower the FSx for Lustre throughput per TiB to the minimum",
+      "B": "Delete the file system and train directly from Amazon S3 in File mode",
+      "C": "Delete and re-create the file system with automation around each monthly run",
+      "D": "Move the dataset to S3 Glacier Flexible Retrieval between runs"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "once a month",
+        "150 GB",
+        "15-minute run",
+        "FSx recurring cost"
+      ],
+      "signal": "FSx facture en continu ; un job court par mois ne le justifie pas -> supprimer le systeme de fichiers et lire depuis S3",
+      "pieges": {
+        "A": "On paie toujours le minimum de 1,2 To en continu pour 15 minutes d'usage mensuel",
+        "C": "Reduit la facture mais ajoute orchestration, temps de repopulation et fragilite pour gagner quelques minutes",
+        "D": "Economise peu sur 150 Go, ajoute une restauration avant chaque run, et ne touche pas a la facture FSx"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "FSx for Lustre se provisionne et se paie en permanence (minimum 1,2 To), pas par job. Sa performance n'a de valeur que si les jobs relisent souvent les memes donnees. 150 Go se telechargent vite depuis S3 en File mode pour un job mensuel : la bonne correction n'est pas un systeme de fichiers moins cher, c'est de ne plus en avoir.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 383,
+    "question": "A SageMaker AI training job uses a dataset stored in an S3 bucket in eu-west-1. The team launches the same job in us-east-1 to use reserved GPU capacity there, and the job fails while accessing the input data. The execution role has s3:GetObject on the bucket. What should the ML engineer do?",
+    "options": {
+      "A": "Add s3:ListAllMyBuckets to the execution role",
+      "B": "Add a bucket policy that grants the us-east-1 Region access",
+      "C": "Copy or replicate the dataset to an S3 bucket in us-east-1 and point the training job to it",
+      "D": "Enable S3 Transfer Acceleration on the source bucket"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "dataset in eu-west-1",
+        "job in us-east-1",
+        "fails accessing input",
+        "role already has GetObject"
+      ],
+      "signal": "Deux regions + job qui echoue -> le jeu de donnees doit etre dans la meme region que le job : copier/repliquer, ce n'est pas un probleme IAM",
+      "pieges": {
+        "A": "Le role a deja les permissions de lecture ; le probleme n'est pas IAM",
+        "B": "On n'accorde pas l'acces a une region dans une bucket policy ; la contrainte de region reste",
+        "D": "Transfer Acceleration accelere des envois a distance vers S3, il ne rend pas un bucket utilisable par un job d'une autre region"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Le jeu de donnees d'un job d'entrainement SageMaker AI doit se trouver dans la meme region que le job. Quand un scenario mentionne deux regions et un job qui echoue, la reponse est le decalage de region, pas IAM : il faut copier les donnees (ou les repliquer avec S3 Cross-Region Replication) dans la region du job.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 384,
+    "question": "An ML team needs a full copy of a 3 TB production Amazon DynamoDB table every week to build a training dataset. Last week, a Scan-based extraction script caused throttling for the production application. Which solution should the ML engineer use?",
+    "options": {
+      "A": "Run the Scan from several parallel workers to finish faster",
+      "B": "Increase the table's provisioned read capacity during the extraction",
+      "C": "Point the training job directly at the DynamoDB table",
+      "D": "Use the DynamoDB export to Amazon S3 feature (with point-in-time recovery enabled) and train from the exported files"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "full copy of DynamoDB table",
+        "Scan caused throttling",
+        "production application"
+      ],
+      "signal": "Extraire une table DynamoDB sans impacter la production -> export vers S3 (ne consomme aucune capacite de lecture)",
+      "pieges": {
+        "A": "Un Scan parallele consomme encore plus de capacite et aggrave le throttling",
+        "B": "Coute plus cher et laisse la production exposee a une charge d'extraction",
+        "C": "Entrainer directement sur une base operationnelle charge la production et n'est jamais reproductible"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 4,
+        "performance": 3,
+        "op_overhead": 5
+      }
+    },
+    "explication": "L'export DynamoDB vers S3 s'appuie sur la sauvegarde point-in-time recovery : il ne consomme aucune capacite de lecture de la table et n'impacte pas l'application. Il fournit en plus un instantane fige, donc un jeu d'entrainement reproductible. Regle generale : on n'entraine jamais directement contre une base de production, on extrait d'abord.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 385,
+    "question": "A media company in Australia uploads large raw video files several times per day to an S3 bucket in us-east-1 for model training. Uploads over the public internet are slow because of the distance. The company does not want to change its upload tooling, which uses the S3 API. What should the ML engineer recommend?",
+    "options": {
+      "A": "Enable S3 Transfer Acceleration on the bucket and use the accelerate endpoint",
+      "B": "Order an AWS Snowball device every day",
+      "C": "Deploy AWS Storage Gateway in the Australian office",
+      "D": "Create a second bucket in Australia and train there"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "uploads from far away",
+        "slow because of distance",
+        "keep S3 API tooling"
+      ],
+      "signal": "La distance est le signal de S3 Transfer Acceleration (passage par les edge locations CloudFront)",
+      "pieges": {
+        "B": "Snowball sert aux transferts massifs ponctuels quand le reseau ne suit pas, pas a plusieurs envois quotidiens",
+        "C": "Storage Gateway sert a des applications sur site qui ecrivent localement ; ce n'est pas un accelerateur d'envoi longue distance",
+        "D": "Deplace le probleme : l'entrainement et les autres donnees sont dans us-east-1"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 5
+      }
+    },
+    "explication": "S3 Transfer Acceleration achemine les envois via l'edge location AWS la plus proche, puis via le reseau AWS jusqu'a la region du bucket. Il suffit d'activer l'option et d'utiliser l'endpoint accelere, sans changer d'outil. Il est facture en plus par Go : il se justifie par la distance. Pour une synchronisation recurrente depuis un serveur de fichiers sur site, ce serait plutot DataSync.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 386,
+    "question": "An auditor asks an ML team to prove exactly which data was used to train a model that was deployed eight months ago. The team has been overwriting the same S3 prefix with refreshed training data every week. Which practices would have made this possible? (Choose two.)",
+    "options": {
+      "A": "Write each training snapshot to a new immutable, dated S3 prefix",
+      "B": "Use S3 Intelligent-Tiering on the training prefix",
+      "C": "Record the dataset location (prefix or manifest file) together with the model version in the model registry",
+      "D": "Enable S3 Transfer Acceleration",
+      "E": "Compress the training files with gzip"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "prove which data trained the model",
+        "overwriting the same prefix",
+        "auditor"
+      ],
+      "signal": "Reproductibilite -> instantanes immuables (prefixes dates, versioning ou manifestes) + lien dataset <-> version de modele dans le registry",
+      "pieges": {
+        "B": "Intelligent-Tiering optimise le cout de stockage, pas la tracabilite",
+        "D": "Accelere les envois, sans rapport avec l'audit",
+        "E": "La compression ne conserve pas les anciennes versions"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 4,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Reproduire un modele, c'est reproduire son jeu de donnees. Ecraser les donnees sur place detruit cette capacite. Ecrire chaque instantane dans un nouveau prefixe date (ou utiliser S3 Versioning ou des fichiers manifestes), puis enregistrer cet emplacement avec la version du modele dans Model Registry, permet de repondre a la question : sur quoi exactement ce modele a-t-il appris ?",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 387,
+    "question": "A SageMaker AI training job using File mode fails after 20 minutes with a 'No space left on device' error. The dataset is 900 GB and the instance has a 500 GB EBS volume. The team wants to keep the instance type and avoid copying data to a file system. Which options will resolve the issue? (Choose two.)",
+    "options": {
+      "A": "Increase the training volume size (VolumeSizeInGB) to fit the dataset plus working space",
+      "B": "Switch the input to Pipe mode, after converting the data to a format it supports such as RecordIO-protobuf, so that data streams without landing on disk",
+      "C": "Increase the instance count from 1 to 2 with FullyReplicated distribution",
+      "D": "Store the dataset in S3 Glacier Deep Archive",
+      "E": "Increase MaxRuntimeInSeconds"
+    },
+    "answer": "A, B",
+    "radar": {
+      "declencheurs": [
+        "File mode",
+        "no space left on device",
+        "900 GB dataset vs 500 GB volume"
+      ],
+      "signal": "File mode copie tout le dataset sur le disque -> agrandir le volume EBS, ou streamer (Pipe mode) pour reduire le volume necessaire",
+      "pieges": {
+        "C": "FullyReplicated copie le jeu complet sur chaque instance : chaque volume deborde toujours",
+        "D": "Une classe d'archivage est inutilisable pendant un entrainement",
+        "E": "Le probleme est l'espace disque, pas la duree maximale"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 3,
+        "op_overhead": 3
+      }
+    },
+    "explication": "En File mode, tout le jeu de donnees est telecharge sur le volume EBS avant le demarrage : un volume trop petit est une cause classique d'echec. On peut agrandir le volume, ou passer en Pipe mode, qui transmet les donnees en flux par des pipes nommes : rien n'atterrit sur le disque, au prix d'une lecture sequentielle et d'un format supporte (RecordIO-protobuf, augmented manifest).",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 388,
+    "question": "A 20-hour training job runs with managed spot training to save cost. After a Spot interruption, the job restarts from the beginning even though the training script saves checkpoints every 30 minutes to /tmp/checkpoints on the instance. What should the ML engineer change?",
+    "options": {
+      "A": "Switch to On-Demand Instances",
+      "B": "Write checkpoints to the local path that SageMaker AI syncs to Amazon S3 (checkpoint_s3_uri), and load the latest checkpoint at startup",
+      "C": "Increase the EBS volume size",
+      "D": "Save checkpoints every 5 minutes to /tmp/checkpoints"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "Spot interruption",
+        "restarts from the beginning",
+        "checkpoints on local /tmp"
+      ],
+      "signal": "Checkpoint sur disque local = perdu a l'interruption Spot -> ecrire les checkpoints vers S3 (checkpoint_s3_uri) et reprendre depuis le dernier",
+      "pieges": {
+        "A": "Supprime l'economie Spot au lieu de corriger l'emplacement des checkpoints",
+        "C": "Le volume local est perdu avec l'instance, quelle que soit sa taille",
+        "D": "Des checkpoints plus frequents au meme endroit sont perdus de la meme facon"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 2,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Le stockage local d'une instance Spot disparait lors d'une interruption. SageMaker AI synchronise un repertoire local de checkpoints (/opt/ml/checkpoints par defaut) avec checkpoint_s3_uri, puis le restaure au redemarrage. Le script doit y ecrire ses checkpoints et charger le plus recent au demarrage.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.2.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 389,
+    "question": "A Spark job on Amazon EMR reads 2 TB of training data stored as a few large gzip-compressed CSV files. Most executors stay idle and only a handful of tasks do all the work. What is the BEST way to restore parallelism?",
+    "options": {
+      "A": "Add more core nodes to the cluster",
+      "B": "Convert the data to Apache Parquet (with Snappy compression)",
+      "C": "Increase spark.executor.memory",
+      "D": "Recompress the files with gzip at a higher compression level"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "gzip CSV",
+        "few large files",
+        "most executors idle"
+      ],
+      "signal": "Un CSV gzip n'est pas decoupable : un fichier = un worker -> Parquet (compression par row group, reste decoupable)",
+      "pieges": {
+        "A": "Plus de noeuds restent inactifs tant qu'un fichier ne peut etre lu que par une seule tache",
+        "C": "La memoire ne change pas le nombre de taches paralleles",
+        "D": "gzip reste non decoupable, quel que soit le niveau de compression"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Le piege du gzip : compresser un fichier texte reduit le stockage mais detruit le parallelisme, car un fichier gzip ne se decoupe pas et doit etre lu par un seul worker. Parquet compresse par row group (Snappy par defaut) et reste decoupable. Il apporte en plus la lecture par colonne et le predicate pushdown. bzip2 serait decoupable, mais lent a decompresser.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.5",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 390,
+    "question": "Several microservices continuously publish events whose schemas change frequently (new optional fields are added every few weeks). Downstream consumers must keep working when fields are added, without coordinating schema files separately. Which format should the producers write?",
+    "options": {
+      "A": "Apache Avro",
+      "B": "CSV",
+      "C": "Apache Parquet",
+      "D": "RecordIO-protobuf"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "written continuously",
+        "schemas change frequently",
+        "consumers keep working"
+      ],
+      "signal": "Ecriture continue + evolution de schema -> Avro (format ligne, le schema voyage avec les donnees)",
+      "pieges": {
+        "B": "Pas de types ni de schema : chaque nouveau champ casse les lecteurs positionnels",
+        "C": "Parquet est fait pour la lecture analytique par colonne, pas pour l'ecriture enregistrement par enregistrement",
+        "D": "Format specifique aux algorithmes integres de SageMaker AI, pas un format d'echange d'evenements"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Avro est un format binaire oriente ligne : chaque fichier embarque son schema, et l'evolution de schema est prevue (ajouter un champ optionnel ne casse pas les anciens lecteurs). Il convient donc a l'ecriture et au streaming. Pour l'analyse par colonne, on convertit ensuite en Parquet ou ORC.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.5",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 391,
+    "question": "An ML engineer trains the SageMaker AI built-in Linear Learner algorithm on a 3 TB numeric feature matrix that is very sparse. The team wants to use Pipe mode to avoid provisioning large EBS volumes. Which input format should the engineer use?",
+    "options": {
+      "A": "CSV",
+      "B": "JSON Lines",
+      "C": "RecordIO-protobuf",
+      "D": "Apache ORC"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "built-in algorithm",
+        "huge numeric matrix",
+        "sparse",
+        "Pipe mode"
+      ],
+      "signal": "Algorithme integre + Pipe mode + matrice numerique enorme (creuse) -> RecordIO-protobuf",
+      "pieges": {
+        "A": "Le CSV stocke chaque zero et ne represente pas efficacement une matrice creuse",
+        "B": "Verbeux et couteux a parser a grande echelle",
+        "D": "ORC est un format analytique (Hive/EMR), pas l'entree preferee des algorithmes integres"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "RecordIO-protobuf est le format binaire prefere de la plupart des algorithmes integres de SageMaker AI. Il regroupe de nombreux enregistrements en gros blocs sequentiels, ce qui rend le Pipe mode efficace, et represente des tenseurs float32 denses ou creux. Pour une matrice tres creuse, on ne stocke que les valeurs non nulles.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.5",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 392,
+    "question": "A fraud scoring application and an analytics application both read the same Amazon Kinesis Data Streams stream. Both teams report slow reads that seem to compete with each other. In addition, a bug last week corrupted two days of fraud scores, and the events could not be reprocessed because they had already expired. Which combination addresses both problems? (Choose two.)",
+    "options": {
+      "A": "Register both consumers with enhanced fan-out",
+      "B": "Replace the stream with Amazon Data Firehose",
+      "C": "Increase the stream's data retention period beyond the default 24 hours (for example, to 7 days)",
+      "D": "Double the number of shards and keep shared-throughput consumers",
+      "E": "Create a second stream and have the producer write to both"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "two consumers competing",
+        "slow reads",
+        "could not reprocess",
+        "events expired"
+      ],
+      "signal": "Contention entre consommateurs -> enhanced fan-out ; besoin de rejouer -> retention etendue (24 h par defaut)",
+      "pieges": {
+        "B": "Firehose n'a ni retention ni replay, et supprime le chemin temps reel de la fraude",
+        "D": "Plus de shards = plus de debit total, mais toujours partage, et la retention reste de 24 h",
+        "E": "Double l'ingestion et oblige le producteur a garder deux ecritures coherentes"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 4,
+        "performance": 5,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Par defaut, tous les consommateurs partagent les 2 Mo/s de lecture de chaque shard. L'enhanced fan-out donne a chaque consommateur ses propres 2 Mo/s par shard, en push, avec environ 70 ms de latence. La retention par defaut est de 24 heures : l'etendre (7 jours, et jusqu'a 365 jours) permet de rejouer les evenements apres un bug. Deux problemes, deux fonctionnalites.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 393,
+    "question": "A website sends clickstream events that must land in Amazon S3 as Parquet, partitioned by date, for weekly model training. There is a single destination, no requirement to replay events, and a delay of a few minutes is acceptable. The team is small. Which design has the LEAST operational overhead?",
+    "options": {
+      "A": "Kinesis Data Streams with an AWS Lambda consumer that converts records and writes to S3",
+      "B": "Amazon MSK with a Kafka Connect S3 sink connector",
+      "C": "Amazon Managed Service for Apache Flink writing Parquet files to S3",
+      "D": "Amazon Data Firehose with record format conversion to Parquet and dynamic partitioning"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "land in S3 as Parquet",
+        "single destination",
+        "no replay",
+        "minutes acceptable",
+        "least overhead"
+      ],
+      "signal": "Livraison vers S3 en Parquet sans replay ni traitement d'etat -> Amazon Data Firehose (conversion + partitionnement integres)",
+      "pieges": {
+        "A": "Fonctionne, mais vous gerez le code du consumer, les shards, les erreurs et le regroupement des petits fichiers",
+        "B": "Le plus lourd a operer, et rien n'indique que l'equipe utilise deja Kafka",
+        "C": "Flink se justifie par des fenetres, jointures ou agregations avec etat, absentes ici"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 3,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Amazon Data Firehose (anciennement Kinesis Data Firehose) n'a ni shards, ni consommateurs, ni code : il met en tampon (jusqu'a 128 Mo ou 900 secondes pour S3), convertit en Parquet ou ORC et partitionne dynamiquement a l'ecriture. Il n'a ni retention ni replay. Replay, consommateurs multiples ou traitement avec etat sont les trois signaux qui l'excluent ; aucun n'est present ici.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 394,
+    "question": "A Kinesis Data Streams stream in provisioned mode has 20 shards, and total incoming traffic is well below the stream's aggregate capacity. However, producers regularly receive ProvisionedThroughputExceededException errors. Most records use the store_id of the company's largest store as the partition key. What is the MOST likely fix?",
+    "options": {
+      "A": "Double the number of shards",
+      "B": "Use a higher-cardinality partition key (for example, store_id combined with a transaction ID) so records spread across shards",
+      "C": "Switch consumers to enhanced fan-out",
+      "D": "Increase the retention period"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "ProvisionedThroughputExceeded",
+        "traffic below aggregate capacity",
+        "one partition key dominates"
+      ],
+      "signal": "Erreur de debit alors que la capacite globale suffit -> cle de partition chaude : un seul shard sature",
+      "pieges": {
+        "A": "Une cle unique va toujours vers un seul shard ; ajouter des shards ne repartit pas une cle chaude",
+        "C": "L'enhanced fan-out concerne la lecture, l'erreur survient a l'ecriture",
+        "D": "La retention n'a aucun effet sur le debit d'ecriture"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Un shard accepte 1 Mo/s ou 1 000 enregistrements/s en ecriture. Les enregistrements sont affectes aux shards selon le hash de la cle de partition : si la plupart partagent la meme cle, un seul shard sature pendant que les autres sont vides. ProvisionedThroughputExceeded signale souvent une cle chaude plutot qu'un manque de shards. Une cle de plus forte cardinalite repartit la charge.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 395,
+    "question": "An AWS Lambda function consumes a Kinesis data stream to compute features. One malformed record causes the function to fail, and Lambda retries it indefinitely, so processing on that shard stops completely. Which configuration changes prevent a single bad record from halting the shard? (Choose two.)",
+    "options": {
+      "A": "Enable 'bisect batch on function error' and set a maximum retry attempts value",
+      "B": "Increase the function memory",
+      "C": "Configure an on-failure destination (SQS queue or SNS topic) to capture records that keep failing",
+      "D": "Increase the stream's retention period",
+      "E": "Increase the batch size"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "poison record",
+        "retried indefinitely",
+        "shard stops"
+      ],
+      "signal": "Enregistrement empoisonne qui bloque un shard -> bisect on function error + limite de retries + destination d'echec (DLQ)",
+      "pieges": {
+        "B": "Plus de memoire ne corrige pas un enregistrement mal forme",
+        "D": "Une retention plus longue prolonge le blocage au lieu de le resoudre",
+        "E": "Des lots plus gros augmentent le nombre d'enregistrements bloques avec le mauvais"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 5,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Avec une source Kinesis, Lambda retente le lot en echec jusqu'a son expiration, ce qui bloque tout le shard derriere lui. Le decoupage du lot en deux (bisect) isole l'enregistrement fautif, la limite de tentatives evite les retries infinis, et la destination d'echec conserve les enregistrements rejetes pour analyse. Kinesis livre au moins une fois : les consommateurs doivent aussi etre idempotents.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 396,
+    "question": "A team plans a new Kinesis data stream for IoT telemetry whose volume is unpredictable: quiet for days, then large spikes during field tests. The team does not want to monitor shard counts or resize the stream. Which capacity mode should the ML engineer choose?",
+    "options": {
+      "A": "Provisioned mode with 2 shards and a CloudWatch alarm",
+      "B": "Provisioned mode with enough shards for the largest expected spike",
+      "C": "On-demand mode",
+      "D": "Provisioned mode with Application Auto Scaling on the shard count"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "unpredictable volume",
+        "spikes",
+        "no shard management"
+      ],
+      "signal": "Trafic imprevisible + pas de gestion des shards -> Kinesis Data Streams en mode on-demand",
+      "pieges": {
+        "A": "2 shards saturent pendant les pics, et l'alarme ne fait que prevenir",
+        "B": "On paie en permanence la capacite du pic pour un flux souvent calme",
+        "D": "Reste une gestion de capacite a concevoir et a maintenir, ce que l'equipe veut eviter"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 4,
+        "performance": 4,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Le mode provisionne est le moins cher au Go pour un trafic regulier, mais vous gerez le nombre de shards. Le mode on-demand s'adapte automatiquement (a partir de 4 Mo/s en ecriture et 8 Mo/s en lecture, et bien au-dela) sans jamais dimensionner de shard : c'est le choix pour un trafic irregulier ou inconnu.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 397,
+    "question": "An older internal runbook says to use 'Kinesis Data Analytics for SQL' to compute 5-minute rolling aggregates on a Kinesis data stream before writing features to the SageMaker Feature Store online store. The team is building this pipeline today. Which service should the ML engineer use?",
+    "options": {
+      "A": "Kinesis Data Analytics for SQL, as written in the runbook",
+      "B": "Amazon Data Firehose with a Lambda transformation",
+      "C": "AWS Glue DataBrew",
+      "D": "Amazon Managed Service for Apache Flink"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "rolling aggregates",
+        "older runbook",
+        "Kinesis Data Analytics for SQL"
+      ],
+      "signal": "Kinesis Data Analytics for SQL a ete retire en janvier 2026 ; les agregations fenetrees avec etat -> Managed Service for Apache Flink",
+      "pieges": {
+        "A": "Le service a ete retire : il n'est plus disponible",
+        "B": "La transformation Firehose est sans etat, enregistrement par enregistrement : pas de fenetres glissantes",
+        "C": "DataBrew prepare des jeux de donnees en batch, pas des flux"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Plusieurs services ont change de nom : Kinesis Data Firehose est devenu Amazon Data Firehose, Kinesis Data Analytics for Apache Flink est devenu Amazon Managed Service for Apache Flink, et Kinesis Data Analytics for SQL a ete retire en janvier 2026. Flink gere les fenetres, les jointures et l'etat entre evenements (en Java, Scala, Python ou SQL) et peut ecrire les agregats dans le Feature Store.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.1.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 398,
+    "question": "A team runs a nightly job that reads a 300 MB CSV file, applies a few pandas transformations, and writes the result to Amazon S3. It is currently an AWS Glue Spark job with 10 G.1X workers, and the bill seems high for such a small job. What is the MOST cost-effective change?",
+    "options": {
+      "A": "Increase the number of workers so the job finishes faster",
+      "B": "Convert the job to an AWS Glue Python shell job",
+      "C": "Move the job to an Amazon EMR cluster",
+      "D": "Enable Glue auto scaling on the Spark job"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "small file (300 MB)",
+        "pandas",
+        "Spark job with 10 workers",
+        "bill too high"
+      ],
+      "signal": "Petit job mono-noeud -> Glue Python shell (pas de cluster Spark a payer)",
+      "pieges": {
+        "A": "Plus de workers inactifs coutent plus ; le sur-provisionnement des DPU est l'erreur de cout Glue la plus frequente",
+        "C": "Un cluster EMR ajoute de la gestion et coute pendant ses temps morts",
+        "D": "Limite le gaspillage mais paie encore un environnement Spark distribue inutile"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Glue propose plusieurs types de jobs : Spark (ETL distribue), Spark Streaming et Python shell (un seul noeud, sans surcout Spark). Payer un cluster Spark pour transformer 300 Mo avec pandas est une mauvaise reponse classique. Pour un job Spark sans contrainte de delai, l'execution Flex (capacite inutilisee, moins chere) serait l'autre levier de cout.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 399,
+    "question": "A genomics company runs a nightly 8-hour Spark pipeline over 40 TB. It requires a specific Apache Spark release and custom native libraries installed with bootstrap actions. Cost is a priority and the team has experienced Spark engineers. Which configuration should the ML engineer recommend?",
+    "options": {
+      "A": "AWS Glue Spark jobs with Flex execution",
+      "B": "Amazon EMR on EC2 with On-Demand core nodes and Spot Instances on task nodes",
+      "C": "Amazon EMR on EC2 with Spot Instances on core nodes to maximize savings",
+      "D": "SageMaker AI Processing jobs with the PySpark container"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "specific Spark release",
+        "bootstrap actions",
+        "native libraries",
+        "8 hours nightly",
+        "cost priority"
+      ],
+      "signal": "Version imposee + bootstrap + forte charge soutenue -> EMR ; Spot sur les task nodes, On-Demand sur les core nodes",
+      "pieges": {
+        "A": "Glue ne permet ni de choisir une version arbitraire de Spark ni d'executer des bootstrap actions",
+        "C": "Les core nodes portent les blocs HDFS : une interruption Spot peut perdre des donnees",
+        "D": "C'est de l'ingenierie de donnees, pas le pretraitement d'un modele, et la contrainte de version demeure"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 4,
+        "op_overhead": 2
+      }
+    },
+    "explication": "EMR se choisit pour le controle (version de framework, bibliotheques, bootstrap actions) ou pour l'economie a grande echelle. Les task nodes ne stockent pas de donnees : c'est la que le Spot est sans risque. Les core nodes hebergent HDFS et doivent rester On-Demand. Ce decoupage Spot/On-Demand revient tres souvent a l'examen.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 400,
+    "question": "An ML engineer runs a SageMaker AI Processing job on 10 instances to preprocess 2 TB of files in Amazon S3. Each instance receives a full copy of the 2 TB, so the job is slow and each instance processes the same data. Which setting should the engineer change?",
+    "options": {
+      "A": "Set the ProcessingInput S3DataDistributionType to ShardedByS3Key",
+      "B": "Increase the instance count to 20",
+      "C": "Use a larger instance type",
+      "D": "Switch the ProcessingOutput upload mode to Continuous"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "Processing job",
+        "10 instances",
+        "each receives a full copy"
+      ],
+      "signal": "Repartir les donnees entre instances d'un Processing job -> S3DataDistributionType = ShardedByS3Key (au lieu de FullyReplicated)",
+      "pieges": {
+        "B": "Avec FullyReplicated, 20 instances copieraient 20 fois les 2 To",
+        "C": "Une instance plus grosse traite toujours l'integralite des donnees",
+        "D": "Le mode d'envoi de la sortie n'affecte pas la repartition de l'entree"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "FullyReplicated copie toutes les donnees d'entree sur chaque instance, ce qui est utile pour de petits fichiers de reference. ShardedByS3Key repartit les objets S3 entre les instances : chacune traite sa part. C'est ce reglage qui permet a un Processing job distribue de passer a l'echelle.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 401,
+    "question": "Business analysts with no coding skills must clean a 30 GB weekly extract for reporting and several downstream consumers: rename columns, convert currency strings to numbers, remove duplicates, and profile data quality. They must maintain this themselves without engineering support. Which service should the ML engineer recommend?",
+    "options": {
+      "A": "AWS Glue DataBrew, with the steps saved as a recipe and run as a scheduled recipe job",
+      "B": "An AWS Glue Spark job authored in Glue Studio",
+      "C": "SageMaker Data Wrangler in SageMaker Canvas exported to a SageMaker Pipeline",
+      "D": "A SageMaker AI Processing job running a scikit-learn script"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "analysts, no coding",
+        "general data cleaning",
+        "many consumers",
+        "maintain themselves",
+        "profile data quality"
+      ],
+      "signal": "Nettoyage general, sans code, maintenu par des analystes -> Glue DataBrew (recettes + profile jobs)",
+      "pieges": {
+        "B": "Glue Studio est visuel mais genere du code Spark que quelqu'un devra maintenir",
+        "C": "Data Wrangler sert a preparer des features pour un modele et finit en etape de pipeline ML",
+        "D": "Demande du Python et vise le pretraitement d'un seul modele"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "DataBrew propose plus de 250 transformations visuelles, enregistrees en recette et rejouees par un job planifie, ainsi que des profile jobs (statistiques, correlations). Le resultat est un jeu de donnees nettoye pour plusieurs consommateurs. Data Wrangler (desormais dans SageMaker Canvas) vise des transformations specifiques au ML et s'exporte vers un Processing job ou un Pipeline.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 402,
+    "question": "A churn model is trained with a scikit-learn script. Categorical encoding and scaling are reimplemented in PySpark in a separate AWS Glue job maintained by another team. Production accuracy is lower than validation accuracy, and the two implementations handle unseen categories differently. The ML team wants preprocessing inside its SageMaker Pipeline. What should the ML engineer do?",
+    "options": {
+      "A": "Rewrite the Glue job to match scikit-learn exactly and add unit tests",
+      "B": "Move preprocessing to a SageMaker AI Processing job that uses the scikit-learn container and the same fitted transformers as training",
+      "C": "Move preprocessing to AWS Glue DataBrew so that both teams can see the transforms",
+      "D": "Put the preprocessing inside the training script only"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "two implementations of one transform",
+        "production below validation",
+        "unseen categories handled differently",
+        "inside SageMaker Pipeline"
+      ],
+      "signal": "Deux implementations du meme pretraitement = training-serving skew -> une seule implementation, memes bibliotheques : SageMaker Processing",
+      "pieges": {
+        "A": "Garde deux implementations et promet de les synchroniser pour toujours ; les tests reduisent le risque sans supprimer la cause",
+        "C": "Ajoute une troisieme implementation, qui ne peut pas utiliser l'encodeur scikit-learn",
+        "D": "Corrige l'entrainement mais pas l'inference, qui a toujours besoin de la transformation"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Quand le pretraitement est code en Spark pour l'entrainement et autrement ailleurs, les implementations divergent sans erreur visible : c'est le training-serving skew. Un Processing job avec le conteneur scikit-learn utilise les memes bibliotheques que l'entrainement et s'integre nativement comme etape de SageMaker Pipelines. On supprime la cause au lieu de la surveiller.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 403,
+    "question": "An IoT platform receives thousands of small JSON files (about 100 KB each) in Amazon S3 every hour. Each file needs its timestamps normalized and two fields redacted, independently of other files, and must be available in a curated bucket within seconds. Which approach has the LEAST operational overhead?",
+    "options": {
+      "A": "An AWS Glue Spark job scheduled every 5 minutes",
+      "B": "An Amazon EMR Serverless job submitted for each batch of files",
+      "C": "An AWS Lambda function triggered by S3 event notifications",
+      "D": "A SageMaker AI Processing job triggered by an Amazon EventBridge rule for each file"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "small files",
+        "per-file independent transform",
+        "within seconds",
+        "least overhead"
+      ],
+      "signal": "Traitement par fichier, independant, en quelques secondes -> Lambda declenchee par evenement S3",
+      "pieges": {
+        "A": "Le seul demarrage du job depasse l'exigence de quelques secondes, et on paie un moteur distribue pour de petits fichiers",
+        "B": "Supprime le cluster mais garde la soumission de job et le regroupement en lots",
+        "D": "Chaque Processing job lance une infrastructure : des milliers par heure, c'est la mauvaise forme"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 1,
+        "haute_dispo": 3,
+        "performance": 5,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Lambda demarre en millisecondes, scale automatiquement par fichier et ne coute rien entre deux invocations : c'est l'outil des petites transformations evenementielles. Ses limites (15 minutes maximum, memoire bornee, pas de distribution) l'excluent des gros traitements, mais pas de celui-ci.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 404,
+    "question": "An AWS Glue Spark job aggregates 5 TB of transactions by customer_id. 199 of its 200 tasks finish in a few minutes, but one task runs for more than an hour. A single wholesale customer accounts for about 30% of all rows. What is the MOST likely cause and fix?",
+    "options": {
+      "A": "The cluster is undersized; double the number of workers",
+      "B": "Data skew on customer_id; salt the hot key (or broadcast the smaller side of a join) to spread the work",
+      "C": "The input is not compressed; enable Snappy compression",
+      "D": "Job bookmarks are disabled; enable them"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "199 tasks fast, one task very slow",
+        "one key holds 30% of rows"
+      ],
+      "signal": "Une seule tache interminable alors que les autres finissent vite = skew de donnees, pas un cluster trop petit",
+      "pieges": {
+        "A": "Plus de workers ne decoupent pas une cle unique : la tache chaude reste seule",
+        "C": "La compression n'equilibre pas la repartition des cles",
+        "D": "Les bookmarks evitent de retraiter d'anciens fichiers, sans effet sur le desequilibre"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Quand une cle concentre la majorite des lignes, la tache qui la recoit tourne bien plus longtemps que les autres. Le salage ajoute un suffixe aleatoire a la cle chaude pour la repartir sur plusieurs taches, puis on reagrege. Pour une jointure avec une petite table, la broadcast join evite le shuffle. Ajouter des noeuds n'y change rien.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.1",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 405,
+    "question": "A churn model reaches 98% validation accuracy but performs barely better than random in production. Feature importance shows that 'cancellation_ticket_id' dominates every other feature; it is populated only for customers who have already churned. What should the ML engineer do?",
+    "options": {
+      "A": "Fill the empty values with a placeholder so the column is populated for every row",
+      "B": "Add stronger L2 regularization so the model relies less on this feature",
+      "C": "Remove the feature, because its value does not exist at prediction time",
+      "D": "Keep the feature but reduce its weight with a custom penalty"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "validation far too good",
+        "production near random",
+        "one feature dominates",
+        "populated only after churn"
+      ],
+      "signal": "Precision suspecte + une feature dominante qui n'existe qu'apres l'evenement = fuite de cible (target leakage) -> supprimer la feature",
+      "pieges": {
+        "A": "Le placeholder rend la fuite plus discrete, pas plus petite : il signifie toujours 'n'a pas churne'",
+        "B": "La regularisation lutte contre le bruit ; cette feature n'est pas du bruit, c'est la cible deguisee",
+        "D": "On negocie avec une feature qui sera vide pour tout le monde au moment de la prediction"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "La fuite de donnees, c'est de l'information dans les features qui n'existera pas au moment de la prediction. La question a poser pour chaque feature : cette valeur existera-t-elle, avec ce sens, quand j'aurai besoin d'une prediction ? Un identifiant de ticket de resiliation n'existe qu'apres le churn : c'est une consequence du resultat, pas une cause. Il faut la retirer.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 406,
+    "question": "An ML engineer standardizes all numeric features by computing the mean and standard deviation on the full dataset, then splits the data into training and test sets. Test results look better than expected. Which ordering should the engineer use instead?",
+    "options": {
+      "A": "Split first, fit the scaler on the training set only, apply it to the validation and test sets, and save the fitted scaler for inference",
+      "B": "Standardize the full dataset, shuffle it, then split",
+      "C": "Split first, then fit a separate scaler on each split",
+      "D": "Skip standardization because it always leaks information"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "mean and std computed on full dataset",
+        "then split",
+        "test results better than expected"
+      ],
+      "signal": "Contamination train-test : separer d'abord, ajuster (fit) sur l'entrainement seulement, appliquer partout, persister l'objet ajuste",
+      "pieges": {
+        "B": "Melanger ne change rien : les statistiques du test ont deja servi a transformer l'entrainement",
+        "C": "Des scalers differents par split donnent des echelles incoherentes, et l'inference n'a pas de reference",
+        "D": "La standardisation est utile ; c'est l'ordre des operations qui cree la fuite"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "L'ordre correct : separer, apprendre, appliquer, persister. On separe avant toute transformation, on ajuste imputers, scalers et encodeurs sur l'entrainement seul, on les applique aux trois jeux, puis on enregistre ces objets, car l'inference en a besoin. Une moyenne calculee sur toutes les donnees fait fuiter de l'information du test.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 407,
+    "question": "In a loan dataset, 'annual_income' is missing for 12% of applicants. Analysis shows that high earners frequently decline to state their income, so the missingness itself is related to the target. How should the ML engineer handle this column?",
+    "options": {
+      "A": "Drop all rows with a missing income",
+      "B": "Impute the mean income computed on the full dataset",
+      "C": "Drop the income column",
+      "D": "Impute the median (fitted on the training split) and add a binary 'income_was_missing' indicator feature"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "missing because of what the value would have been",
+        "missingness related to target"
+      ],
+      "signal": "Donnees manquantes non aleatoires (MNAR) : le vide porte un signal -> imputer ET ajouter un indicateur 'etait manquant'",
+      "pieges": {
+        "A": "Supprimer ces lignes biaise le jeu de donnees, car le manque n'est pas aleatoire",
+        "B": "Une moyenne calculee sur toutes les donnees fuit, est sensible aux revenus extremes et efface le signal du vide",
+        "C": "On perd une feature probablement tres predictive"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Il faut se demander pourquoi une valeur manque. Manquant completement au hasard : on peut imputer sans risque. Manquant non au hasard (MNAR) : le vide est une information. Imputer seul detruit ce signal ; une colonne indicatrice le garde visible pour le modele. La mediane resiste aux valeurs extremes, et l'imputer s'ajuste sur l'entrainement uniquement.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.7",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 408,
+    "question": "A delivery-delay model uses the destination postcode, which has about 45,000 distinct values. After one-hot encoding, the training job fails with an out-of-memory error. The team asks whether to move to a memory-optimized instance. What should the ML engineer recommend?",
+    "options": {
+      "A": "Use a larger memory-optimized instance and keep one-hot encoding",
+      "B": "Label encode the postcodes as integers from 1 to 45,000",
+      "C": "Replace one-hot encoding with target or frequency encoding fitted on the training split only (or group rare postcodes into 'Other')",
+      "D": "Drop the postcode column because high-cardinality features are rarely useful"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "45,000 distinct values",
+        "one-hot",
+        "out of memory",
+        "bigger instance?"
+      ],
+      "signal": "Cardinalite elevee -> encodage target/frequence (ajuste sur l'entrainement) ou regroupement de la queue ; la solution n'est jamais une plus grosse instance",
+      "pieges": {
+        "A": "On paie du materiel pour 45 000 colonnes presque toutes a zero, que le modele va surapprendre",
+        "B": "Introduit un ordre absurde : un code postal n'est pas 'plus grand' qu'un autre",
+        "D": "La destination est probablement l'un des meilleurs predicteurs du retard"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "C'est la cardinalite qui decide de l'encodage. Le one-hot convient aux faibles cardinalites ; a 45 000 valeurs, il cree une matrice enorme et creuse. Les encodages target ou frequence tiennent en une seule colonne. Le target encoding doit etre ajuste sur les folds d'entrainement seulement, sinon il fait fuiter la reponse, et les valeurs inconnues prennent la moyenne globale.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 409,
+    "question": "A demand forecasting model uses 'hour_of_day' encoded as an integer from 0 to 23. The model treats 23:00 and 00:00 as very different, although demand at those times is nearly identical. Which feature engineering technique fixes this?",
+    "options": {
+      "A": "One-hot encode hour_of_day into 24 columns",
+      "B": "Apply cyclical encoding: replace hour_of_day with sin(2*pi*hour/24) and cos(2*pi*hour/24)",
+      "C": "Min-max normalize hour_of_day to the range 0-1",
+      "D": "Apply a log transformation to hour_of_day"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "hour 0-23 as integer",
+        "23:00 and 00:00 treated as far apart"
+      ],
+      "signal": "Valeur cyclique (heure, jour, mois, cap) -> encodage cyclique sinus/cosinus",
+      "pieges": {
+        "A": "Supprime l'ordre mais perd la proximite entre heures voisines et ajoute 24 colonnes",
+        "C": "La normalisation garde 23 et 0 aux deux extremites de l'echelle",
+        "D": "Le log n'a pas de sens pour une variable cyclique, et log(0) n'est pas defini"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 1
+      }
+    },
+    "explication": "L'heure 23 et l'heure 0 sont voisines dans la realite mais eloignees en tant qu'entiers. En projetant la valeur sur un cercle avec un sinus et un cosinus, 23 h et 0 h deviennent des points proches. La technique s'applique aux heures, jours de la semaine, mois et caps de boussole : c'est le detail que beaucoup oublient.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 410,
+    "question": "A team reuses a text-cleaning pipeline from an old TF-IDF classifier (lowercasing, stemming, stop-word removal) to prepare documents for embedding with a modern embedding model in a RAG application. Retrieval quality is poor. What should the ML engineer change?",
+    "options": {
+      "A": "Add lemmatization in addition to stemming",
+      "B": "Remove more stop words to reduce token count",
+      "C": "Convert the documents to bag-of-words vectors before embedding",
+      "D": "Stop stemming and removing stop words; only clean boilerplate, markup, encoding errors, and extra whitespace, and keep the natural sentences"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "old TF-IDF cleaning",
+        "stemming, stop-word removal",
+        "embeddings",
+        "poor retrieval"
+      ],
+      "signal": "Les embeddings ont besoin du contexte : le stemming et la suppression des mots vides les degradent ; nettoyer seulement le bruit",
+      "pieges": {
+        "A": "Reduit encore plus le texte, dans la mauvaise direction",
+        "B": "Les mots vides portent du sens pour un modele d'embedding ('not', 'without'...)",
+        "C": "Le sac de mots perd l'ordre et le contexte que l'embedding doit capter"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Le NLP classique reduisait le vocabulaire (stemming, suppression des mots vides). Les modeles d'embedding ont au contraire besoin de phrases naturelles pour saisir le sens. Le pretraitement utile consiste a retirer le boilerplate et le balisage, corriger l'encodage et normaliser les espaces. La tokenisation en sous-mots (BPE) gere les mots inconnus, et reduire les tokens inutiles baisse aussi le cout sur un FM.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.6",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 411,
+    "question": "A dataset contains several purchase records per customer. The ML engineer randomly splits the rows into training and test sets, and the test accuracy is much higher than the accuracy later observed on new customers. Which split strategy should the engineer use?",
+    "options": {
+      "A": "A grouped split that keeps all rows of a given customer in the same set",
+      "B": "A stratified random split on the label",
+      "C": "A larger test set with the same random split",
+      "D": "Shuffle the rows twice before the random split"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "several rows per customer",
+        "random split",
+        "test accuracy too high vs new customers"
+      ],
+      "signal": "Plusieurs lignes par entite -> split groupe (un client entierement d'un seul cote), sinon le modele memorise les clients",
+      "pieges": {
+        "B": "La stratification preserve les proportions de classes mais laisse un meme client des deux cotes",
+        "C": "Plus de lignes de test ne corrige pas la fuite entre les jeux",
+        "D": "Melanger plus ne change pas le fait qu'un client apparait des deux cotes"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 1
+      }
+    },
+    "explication": "Le choix du split depend des donnees : aleatoire si les lignes sont independantes, stratifie si les classes sont desequilibrees, temporel s'il y a une dimension de temps, groupe si plusieurs lignes partagent une entite. Sinon, le modele reconnait des clients deja vus et le test surestime la performance sur de nouveaux clients.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.3",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 412,
+    "question": "A bank must explain every credit decision to regulators and has 400 candidate features, many of them highly correlated. A data scientist proposes applying PCA to keep 30 components. What should the ML engineer recommend instead to reduce the feature set?",
+    "options": {
+      "A": "Apply PCA as proposed and explain the components to the regulator",
+      "B": "Use t-SNE to project the features into two dimensions",
+      "C": "Use feature selection that keeps original features, for example L1 regularization or removing one feature of each highly correlated pair (checked with the variance inflation factor)",
+      "D": "Keep all 400 features"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "explain decisions to regulators",
+        "400 correlated features",
+        "PCA proposed"
+      ],
+      "signal": "Explicabilite reglementaire -> selection de features (on garde les variables d'origine) plutot que PCA (composantes non interpretables)",
+      "pieges": {
+        "A": "On ne peut pas expliquer une composante principale a un regulateur",
+        "B": "t-SNE sert a visualiser, pas a construire un jeu de features explicable",
+        "D": "La multicolinearite rend les coefficients instables et ininterpretables"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 2,
+        "haute_dispo": 0,
+        "performance": 3,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Si le scenario mentionne l'explicabilite ou la reglementation, la PCA est generalement le mauvais choix : elle cree des combinaisons de variables illisibles. La selection de features garde les variables d'origine : la regularisation L1 met a zero les coefficients faibles, et le VIF ou une matrice de correlation reperent les variables redondantes a retirer ou a combiner.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.4",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 413,
+    "question": "For training, a Glue job computes 12 aggregate features from the data warehouse. For live scoring, the loan application service recomputes the same features in Java before calling the SageMaker AI endpoint. An audit finds that 4 features are calculated differently in the two paths, and approval rates in production differ from validation. What should the ML engineer implement?",
+    "options": {
+      "A": "Write the features once to a SageMaker Feature Store feature group with both the online and offline stores enabled; training reads the offline store and the endpoint reads the online store",
+      "B": "Add unit tests that compare the Java and Spark implementations on sample data",
+      "C": "Retrain the model on features produced by the Java implementation",
+      "D": "Move the Java code into a Lambda function and call it from the training job for each row"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "same features computed twice",
+        "calculated differently",
+        "production differs from validation"
+      ],
+      "signal": "Deux implementations d'une meme feature = skew -> une seule ecriture dans Feature Store, deux lecteurs (offline pour l'entrainement, online pour l'inference)",
+      "pieges": {
+        "B": "Detecte les ecarts sur les cas testes mais garde deux implementations qui divergeront a nouveau",
+        "C": "Choisit un gagnant mais garde les deux implementations : la divergence reviendra au prochain changement",
+        "D": "Bon instinct (une seule implementation), mauvais mecanisme : un appel Lambda par ligne pour l'entrainement"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 2,
+        "performance": 5,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Le Feature Store regle la coherence : une seule definition, ecrite une fois, lue par l'entrainement et par l'inference. Le offline store (Parquet dans S3) garde l'historique pour l'entrainement, le online store sert la derniere valeur en quelques millisecondes. Le critere a appliquer a chaque option : reste-t-il exactement une implementation ?",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 414,
+    "question": "A gaming company needs sub-millisecond feature retrieval for a real-time matchmaking model and proposes the SageMaker Feature Store InMemory online tier. The same features must also be kept historically so that the model can be retrained every month on two years of data. What is the problem with this design?",
+    "options": {
+      "A": "The InMemory tier does not support the on-demand throughput mode",
+      "B": "The InMemory tier cannot use Apache Iceberg for its offline store",
+      "C": "Nothing; enable both the online and offline stores on the InMemory feature group",
+      "D": "The InMemory tier supports only online-only feature groups, so there is no offline store and no history to retrain from"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "InMemory tier",
+        "sub-millisecond",
+        "must keep history for retraining"
+      ],
+      "signal": "InMemory = online uniquement, sans replication vers un offline store -> aucun historique ; pour l'historique : tier Standard online + offline",
+      "pieges": {
+        "A": "Le mode de debit n'est pas ce qui bloque l'historique",
+        "B": "Le format de table n'est pas en cause : il n'y a pas d'offline store du tout",
+        "C": "C'est justement la configuration que le service ne propose pas"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Le tier Standard (par defaut) supporte les feature groups online et offline. Le tier InMemory vise la latence la plus faible et le debit le plus eleve, mais seulement pour des groupes online-only (50 Gio maximum par defaut) : aucune replication vers un offline store, donc aucun historique. La solution est le tier Standard avec online et offline, en acceptant une latence de quelques millisecondes.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 415,
+    "question": "Features are streamed continuously into a SageMaker Feature Store feature group whose offline store uses the default AWS Glue table format. Over months, Amazon Athena queries on the offline store have become very slow because of millions of small Parquet files. What should the ML engineer do?",
+    "options": {
+      "A": "Increase the Athena workgroup data scanned limit",
+      "B": "Use the Apache Iceberg table format for the offline store and run compaction to merge small files",
+      "C": "Switch the online store to the InMemory tier",
+      "D": "Disable the offline store"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "streaming ingestion",
+        "offline store Glue format",
+        "millions of small files",
+        "Athena slow"
+      ],
+      "signal": "L'ingestion en streaming cree de petits fichiers -> format de table Apache Iceberg pour l'offline store + compaction",
+      "pieges": {
+        "A": "Cette limite est un garde-fou de cout, pas un levier de performance",
+        "C": "Le tier online n'a aucun effet sur les fichiers de l'offline store",
+        "D": "On perd l'historique necessaire a l'entrainement"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Le format Glue par defaut stocke des fichiers Parquet simples. Apache Iceberg est un format de table ouvert qui permet la compaction des petits fichiers sans bloquer les lectures ni les ecritures ; ses partitions sont journalieres, par event time. AWS recommande Iceberg dans la plupart des cas, en particulier avec une ingestion en streaming.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 416,
+    "question": "A customer exercises a GDPR right-to-erasure request. The ML engineer calls DeleteRecord for the customer's record identifier in a SageMaker Feature Store feature group that has both online and offline stores. What is the state of the data afterwards?",
+    "options": {
+      "A": "The record is removed from both the online and offline stores",
+      "B": "Nothing is removed until the feature group is deleted",
+      "C": "The record is removed from the online store; the offline store is append-only, so a delete marker is added but the history remains in Amazon S3 and must be handled separately",
+      "D": "The record is removed from the offline store only"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "right to erasure",
+        "DeleteRecord",
+        "online and offline stores"
+      ],
+      "signal": "DeleteRecord supprime du online store ; l'offline store est en ajout seul (tombstone), l'historique reste dans S3",
+      "pieges": {
+        "A": "L'offline store n'est jamais reecrit : l'historique reste pour la reproductibilite",
+        "B": "Le online store est mis a jour immediatement",
+        "D": "C'est l'inverse : la suppression touche le online store"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 5,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 2
+      }
+    },
+    "explication": "DeleteRecord retire immediatement l'enregistrement du online store. L'offline store est volontairement en ajout seul : la suppression y ecrit un marqueur (tombstone) et le passe reste intact, pour la reproductibilite. Le DatasetBuilder peut inclure ou exclure ces enregistrements supprimes. Une demande d'effacement exige donc un traitement separe des fichiers dans S3.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 417,
+    "question": "A research team has one model that is retrained monthly and scored in a nightly batch job. A single AWS Glue job recomputes all features and produces both the training set and the batch scoring input. A new architect proposes SageMaker Feature Store with online and offline stores as MLOps best practice. How should the ML engineer assess this?",
+    "options": {
+      "A": "Adopt it fully, because online and offline stores are the standard production pattern",
+      "B": "Push back: there is no real-time serving path and only one consumer, so an online store adds recurring cost without solving a problem",
+      "C": "Adopt it with the InMemory tier to keep online costs low",
+      "D": "Adopt only the online store, because the offline store duplicates data already in S3"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "one model",
+        "batch only",
+        "single job produces both datasets",
+        "proposed as best practice"
+      ],
+      "signal": "Feature Store sert quand le skew ou la reutilisation existent (deux implementations ou deux consommateurs) ; ici aucun des deux",
+      "pieges": {
+        "A": "Bonne pratique pour une forme de systeme que celui-ci n'a pas",
+        "C": "InMemory est le tier premium, pas le moins cher, et supprime l'historique",
+        "D": "Exactement l'inverse : un systeme batch a besoin de l'historique, pas du online store"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 1,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Le Feature Store se rentabilise quand deux consommateurs partagent une definition : endpoint temps reel et entrainement, ou plusieurs modeles. Avec un seul job qui produit les deux jeux de donnees et aucun chemin temps reel, il n'y a ni skew ni reutilisation. Un online store provisionne pour un modele batch est une facture recurrente pour une capacite que personne n'appelle.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.2.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 418,
+    "question": "A team must label 1.2 million product photos into 40 visually distinct categories before training a classifier. Most photos are unambiguous. A vendor quote for labeling everything far exceeds the budget, and the team will not accept lower label quality. What should the ML engineer recommend?",
+    "options": {
+      "A": "Use SageMaker Ground Truth automated data labeling so that humans label only the images the model is uncertain about",
+      "B": "Reduce the number of workers per image from three to one for the whole dataset",
+      "C": "Label a random 10% sample and discard the rest",
+      "D": "Move the job to Amazon Mechanical Turk and accept lower quality"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "1.2 million images",
+        "mostly unambiguous",
+        "budget exceeded",
+        "no lower quality"
+      ],
+      "signal": "Tres gros volume + images majoritairement simples -> automated data labeling (active learning) : le plus gros levier de cout",
+      "pieges": {
+        "B": "Divise le cout mais supprime la consolidation partout, y compris sur les images ambigues qui en ont besoin",
+        "C": "Moins cher, mais jette 90% des donnees",
+        "D": "Le scenario exclut explicitement une baisse de qualite"
+      },
+      "scores": {
+        "cout": 5,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Le cout d'etiquetage depend du nombre d'exemples, des secondes par exemple et du nombre de relecteurs. Avec l'etiquetage automatique, des humains etiquettent un echantillon, un modele s'entraine dessus et etiquette automatiquement les objets dont il est sur. Seuls les cas incertains retournent aux humains, selon un seuil de confiance que vous fixez. Il faut du volume et des cas surtout simples pour que ce soit rentable.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 419,
+    "question": "A company wants to continuously label a sample of new production images as they arrive, so that its training set stays current. The ML engineer sets up a SageMaker Ground Truth streaming labeling job. Which statements about streaming labeling jobs are correct? (Choose two.)",
+    "options": {
+      "A": "The job can be created only through the API, not in the console",
+      "B": "The job runs for a fixed maximum of 24 hours",
+      "C": "The job stops automatically if it stays idle for more than 10 days or can no longer read its input",
+      "D": "The job requires a public Mechanical Turk workforce",
+      "E": "Objects must be uploaded as a single manifest file before the job starts"
+    },
+    "answer": "A, C",
+    "radar": {
+      "declencheurs": [
+        "continuously label",
+        "as they arrive",
+        "streaming labeling job"
+      ],
+      "signal": "Streaming labeling job : API uniquement, accepte de nouveaux objets tant qu'il est actif, s'arrete apres plus de 10 jours d'inactivite",
+      "pieges": {
+        "B": "Il reste actif tant qu'on ne l'arrete pas (sauf inactivite ou entree inaccessible)",
+        "D": "Les trois types de workforce sont possibles, dont une equipe privee",
+        "E": "C'est le fonctionnement d'un job classique ; un job streaming accepte de nouveaux objets en continu"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 2,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Un streaming labeling job est un job de longue duree qui accepte de nouveaux objets pendant qu'il est actif : c'est le schema pour etiqueter en continu des donnees de production. Il se cree uniquement par API. Il s'arrete s'il reste inactif plus de 10 jours ou s'il ne peut plus lire son entree. Les objets au-dela de MaxConcurrentTaskCount attendent dans une file SQS creee pour vous, et expirent apres 14 jours.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 420,
+    "question": "A team deploys a custom SageMaker AI model that classifies insurance claims and creates an Amazon A2I flow definition for a custom task type. They expect only predictions under 70% confidence to be reviewed, but every prediction sent to StartHumanLoop is reviewed, and the reviewers are overwhelmed. What explains this behavior and how should it be fixed?",
+    "options": {
+      "A": "The confidence threshold is inverted; change the comparison operator in the flow definition",
+      "B": "The flow definition lacks a worker task template, so A2I defaults to reviewing everything",
+      "C": "The model returns no confidence score, so A2I treats every prediction as 0",
+      "D": "Custom task types do not support activation conditions; the application must check the confidence itself and call StartHumanLoop only for low-confidence predictions"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "custom SageMaker AI model",
+        "A2I custom task type",
+        "every StartHumanLoop is reviewed"
+      ],
+      "signal": "Conditions d'activation A2I = uniquement Textract et Rekognition ; pour un type personnalise, chaque StartHumanLoop cree une revue : filtrer dans le code",
+      "pieges": {
+        "A": "Un seuil inverse enverrait les predictions sures, pas toutes les predictions",
+        "B": "Un template est obligatoire pour creer la flow definition : sans lui, aucun workflow n'existerait",
+        "C": "A2I n'evalue aucune condition pour un type personnalise : la confiance n'entre pas en jeu"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 3
+      }
+    },
+    "explication": "A2I repose sur trois ressources : le worker task template, la flow definition (le workflow de revue humaine) et la human loop. Seuls les types integres Textract et Rekognition supportent des conditions d'activation (confiance, cles manquantes, echantillonnage). Un modele SageMaker AI personnalise est un type de tache personnalise : chaque appel a StartHumanLoop produit une revue, et c'est l'application qui doit filtrer.",
+    "domain": "ML Model and FM Development",
+    "skill": "2.3.7",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 421,
+    "question": "A content platform uses Amazon Rekognition image moderation with Amazon A2I. Predictions below 85% confidence go to human reviewers, and this queue works well. However, users have reported several clearly inappropriate images that Rekognition labeled as safe with 96% confidence and that nobody reviewed. What should the ML engineer add?",
+    "options": {
+      "A": "Raise the confidence threshold from 85% to 98%",
+      "B": "Switch the workforce from Mechanical Turk to a private team",
+      "C": "A random sampling percentage in the activation conditions so that a share of confident predictions is also reviewed",
+      "D": "Replace A2I with a SageMaker Ground Truth labeling job over the same images"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "confident but wrong predictions",
+        "never reviewed",
+        "threshold works for uncertain cases"
+      ],
+      "signal": "Un seuil de confiance ne questionne jamais une prediction sure -> echantillonnage aleatoire pour auditer aussi les predictions confiantes",
+      "pieges": {
+        "A": "Attrape ce cas a 96% mais inonde la file avec tout ce qui est entre 85 et 98%, et rate toujours au-dela de 98%",
+        "B": "Ameliore la qualite des revues, mais ces images n'atteignent jamais de relecteur",
+        "D": "Ground Truth construit des jeux de donnees avant l'entrainement ; ce n'est pas une supervision de production"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 4,
+        "haute_dispo": 0,
+        "performance": 3,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Le seuil de confiance attrape les cas incertains. L'echantillonnage aleatoire envoie un pourcentage de toutes les predictions, sures ou non, et sert donc d'audit continu. Un modele qui se trompe avec assurance est invisible pour un seuil : c'est exactement ce que l'echantillonnage permet de detecter. Les deux mecanismes sont complementaires.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions",
+    "skill": "4.1.2",
+    "source": "mla-c02-cours"
+  },
+  {
+    "id": 422,
+    "question": "In a SageMaker Ground Truth job, three annotators label each image, and they frequently disagree on the same images. Labeling costs are rising and the label quality is inconsistent. What should the ML engineer do FIRST?",
+    "options": {
+      "A": "Increase the number of annotators per image from three to five",
+      "B": "Replace the annotators with a different vendor",
+      "C": "Clarify the task instructions with worked examples of edge cases, and validate them on a small pilot batch before relabeling the full dataset",
+      "D": "Keep only the labels from the fastest annotator"
+    },
+    "answer": "C",
+    "radar": {
+      "declencheurs": [
+        "annotators frequently disagree",
+        "same images",
+        "costs rising",
+        "inconsistent quality"
+      ],
+      "signal": "Desaccord frequent entre annotateurs = instructions ambigues, pas des annotateurs negligents -> clarifier les instructions et faire un pilote",
+      "pieges": {
+        "A": "Plus d'annotateurs par objet multiplie le cout lineairement sans lever l'ambiguite",
+        "B": "D'autres annotateurs face aux memes instructions ambigues produiront les memes desaccords",
+        "D": "La vitesse n'est pas un critere de qualite et on perd la consolidation"
+      },
+      "scores": {
+        "cout": 4,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 3
+      }
+    },
+    "explication": "La consolidation des annotations fusionne les reponses de plusieurs annotateurs. Leur desaccord est un signal : le plus souvent, la definition de la tache est ambigue. Des instructions claires avec des exemples font plus pour la qualite que des relecteurs supplementaires, dont le cout augmente lineairement. Un petit lot pilote, inspecte avant tout le jeu, valide la correction.",
+    "domain": "Data Preparation for ML and AI",
+    "skill": "1.3.2",
+    "source": "mla-c02-cours"
   }
 ]
