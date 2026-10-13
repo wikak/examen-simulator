@@ -1068,6 +1068,39 @@
     "domain": "Data Preparation for ML and AI"
   },
   {
+    "id": 34,
+    "question": "A travel company is developing a customer support application that uses Amazon Q Business to answer customer questions about travel packages. The company must ensure that responses never mention outdated or no-longer-available travel destinations. The filtering should happen before results are returned to users. Which solution best meets this requirement?",
+    "options": {
+      "A": "Configure Amazon Q Business blocked phrases to prevent responses that reference outdated or unavailable travel destinations",
+      "B": "Analyze the Amazon Q Business API responses using Amazon Comprehend and suppress any responses that mention outdated destinations",
+      "C": "Create an AWS Lambda function that post-processes Amazon Q Business responses and removes outdated destination references",
+      "D": "Configure an Amazon Kendra retriever to exclude documents related to outdated travel destinations from the indexed content"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "responses never mention",
+        "filtering should happen before results are returned",
+        "Amazon Q Business"
+      ],
+      "signal": "Filtrage de contenu natif AVANT restitution -> fonctionnalite integree 'blocked phrases' de Amazon Q Business (guardrail natif)",
+      "pieges": {
+        "B": "Ajouter Comprehend en aval = composant supplementaire a construire/maintenir alors qu'un garde-fou natif existe deja",
+        "C": "Un Lambda de post-traitement custom duplique une fonctionnalite deja native a Q Business, plus d'effort de dev",
+        "D": "Exclure des documents de l'index Kendra reduit la source mais ne garantit pas que le LLM ne mentionne jamais ces destinations (connaissance parametrique, reformulations)"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 3,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Amazon Q Business propose une fonctionnalite native de gouvernance des reponses ('blocked phrases') permettant de bloquer directement toute reponse contenant des termes ou sujets specifiques avant qu'elle ne soit renvoyee a l'utilisateur, sans avoir a construire un pipeline de filtrage externe.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions"
+  },
+  {
     "id": 35,
     "question": "A team is building a binary churn prediction model using 30-day tabular customer features in Amazon SageMaker. They want a solution that provides a fast, easy-to-set-up baseline and is simple to interpret before moving on to more complex models. Which approach best meets these requirements?",
     "options": {
@@ -1201,6 +1234,39 @@
     "domain": "ML Model and FM Development"
   },
   {
+    "id": 39,
+    "question": "You are a data scientist at a media company that processes large volumes of video and image data to generate personalized content recommendations. The dataset is stored in Amazon S3 and includes: Tens of millions of small image files. Several terabytes of high-resolution video files. Training jobs on Amazon SageMaker require low-latency, high-throughput access and must complete quickly to keep up with the dynamic content pipeline. Which approach is most appropriate for these requirements?",
+    "options": {
+      "A": "Use Fast File mode with Amazon S3 to stream small image files directly to training instances on demand, reducing training startup time",
+      "B": "Use Amazon FSx for Lustre to mount the entire dataset as a high-performance file system, providing consistently low-latency access for both images and videos",
+      "C": "Use Fast File mode with Amazon S3 for large video files and store small image files locally on the training instances to reduce latency",
+      "D": "Combine approaches: link small image files in FSx for Lustre and access large video files via Fast File mode from S3, leveraging the strengths of both"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "tens of millions of small image files",
+        "several terabytes of high-resolution video",
+        "low-latency, high-throughput"
+      ],
+      "signal": "Deux profils de fichiers tres differents -> combiner FSx for Lustre (millions de petits fichiers) + S3 Fast File mode (gros fichiers volumineux)",
+      "pieges": {
+        "A": "Fast File mode seul est optimal pour de gros fichiers sequentiels, moins adapte a des millions de tres petits fichiers (overhead par requete S3)",
+        "B": "Monter tout le dataset (y compris plusieurs TB de video) sur FSx for Lustre est possible mais plus couteux/complexe que de laisser les gros fichiers en Fast File mode direct depuis S3",
+        "C": "Stocker les images localement sur les instances de training n'est pas scalable ni persistant, et perd le benefice d'un stockage partage"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 1,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "FSx for Lustre excelle sur l'acces a tres grand nombre de petits fichiers (cache haute performance lie a S3, evite l'overhead d'un GET S3 par fichier), tandis que S3 Fast File mode est optimal pour streamer efficacement de gros fichiers volumineux directement depuis S3. Combiner les deux approches selon le type de fichier permet d'obtenir un acces a faible latence et fort debit sur l'ensemble heterogene du dataset.",
+    "domain": "Data Preparation for ML and AI"
+  },
+  {
     "id": 40,
     "question": "A healthcare organization is running a predictive ML model in production using Amazon SageMaker. SageMaker Model Monitor is enabled to track data quality. After a recent model update, the data scientist notices that Model Monitor flags data quality issues. What is the correct way to address these data quality issues?",
     "options": {
@@ -1297,6 +1363,43 @@
     },
     "explication": "Un VPC Endpoint (de type Gateway pour S3) permet d'acceder a Amazon S3 directement depuis un subnet prive via le reseau prive d'AWS, sans jamais transiter par une passerelle Internet ou un NAT gateway, ce qui est la seule option garantissant que les donnees ne traversent jamais l'Internet public.",
     "domain": "Operating, Monitoring, and Securing ML and AI Solutions"
+  },
+  {
+    "id": 43,
+    "question": "A regulated digital payments startup in North America needs to score card transactions for fraud in under 70 milliseconds during bursts of up to 180,000 requests per minute. The solution must: Protect highly sensitive user data. Maintain very high availability. Provide resilient, real-time inference at scale. Which AWS approach best satisfies these requirements?",
+    "options": {
+      "A": "Train and host models on Amazon SageMaker with managed auto scaling across multiple Availability Zones and protect the public interface using AWS Shield Advanced",
+      "B": "Deploy models on AWS Lambda with Amazon Cognito for user access, leveraging serverless architecture to handle bursts",
+      "C": "Train models using AWS Glue and deploy on Amazon ECS with manual scaling and AWS WAF protecting the service",
+      "D": "Use Amazon EC2 for both training and hosting with manual scaling and Amazon Inspector for vulnerability assessments",
+      "E": "Use Amazon EMR for distributed training and run inference on on-premises servers connected to AWS through a VPN"
+    },
+    "answer": "A",
+    "radar": {
+      "declencheurs": [
+        "under 70 milliseconds",
+        "180,000 requests per minute",
+        "highly sensitive user data",
+        "very high availability",
+        "resilient, real-time inference at scale"
+      ],
+      "signal": "Inference temps reel a tres forte echelle + tres haute dispo + donnees sensibles -> SageMaker managed + autoscaling multi-AZ + Shield Advanced",
+      "pieges": {
+        "B": "Lambda pour de l'inference ML a tres faible latence et fort volume est risque (cold starts, limites de duree/memoire), et Cognito gere l'auth utilisateur, pas la protection DDoS de l'inference",
+        "C": "Scaling manuel sur ECS ne repond pas assez vite a des pics soudains de 180k req/min ; WAF protege contre des attaques applicatives, pas contre l'indisponibilite en charge",
+        "D": "EC2 avec scaling manuel ne peut pas suivre des bursts imprevisibles, et Inspector fait de l'analyse de vulnerabilites, pas de la protection en disponibilite",
+        "E": "L'inference sur des serveurs on-premises via VPN ajoute de la latence reseau incompatible avec un objectif de moins de 70 ms"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 4,
+        "haute_dispo": 5,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "SageMaker avec autoscaling manage sur plusieurs zones de disponibilite repond a la fois a l'exigence de tres haute disponibilite et a la capacite d'absorber des pics de charge en temps reel avec une faible latence. AWS Shield Advanced protege l'interface publique contre les attaques DDoS, ce qui est crucial pour un service de paiement expose et manipulant des donnees sensibles a fort enjeu de resilience.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows"
   },
   {
     "id": 44,
@@ -3184,6 +3287,39 @@
     "domain": "Deployment and Orchestration of ML and AI Workflows"
   },
   {
+    "id": 102,
+    "question": "A company wants to implement a predictive maintenance system for its IoT devices by identifying anomalies in sensor data. The solution must automatically learn patterns from historical device data and detect abnormal behavior in real time without requiring manual model management. Which AWS service is the most suitable choice?",
+    "options": {
+      "A": "Amazon SageMaker",
+      "B": "Amazon Lookout for Equipment",
+      "C": "AWS IoT Analytics",
+      "D": "Amazon Comprehend"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "predictive maintenance",
+        "IoT devices",
+        "without requiring manual model management"
+      ],
+      "signal": "Maintenance predictive sur capteurs industriels + aucune gestion de modele manuelle -> Amazon Lookout for Equipment (service manage dedie)",
+      "pieges": {
+        "A": "SageMaker est une plateforme generaliste qui necessite de construire et gerer soi-meme le modele, contraire a 'without manual model management'",
+        "C": "IoT Analytics traite/analyse des donnees IoT mais ne fournit pas nativement de detection d'anomalies de maintenance predictive prete a l'emploi",
+        "D": "Comprehend est un service de NLP sur du texte, sans rapport avec des donnees de capteurs IoT"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Amazon Lookout for Equipment est un service manage specifiquement concu pour la maintenance predictive industrielle : il apprend automatiquement les patterns normaux a partir des donnees historiques des capteurs et detecte les comportements anormaux en temps reel, sans que l'equipe n'ait a construire ou gerer elle-meme un modele ML, contrairement a SageMaker qui resterait une solution generaliste 'do-it-yourself'.",
+    "domain": "ML Model and FM Development"
+  },
+  {
     "id": 103,
     "question": "A company currently runs a machine learning model for real-time predictions using an Amazon SageMaker endpoint. The company plans to release an updated model but must first evaluate its performance against the existing model before directing all production traffic to it. Which approach will satisfy this requirement while requiring the least operational overhead?",
     "options": {
@@ -3640,6 +3776,38 @@
     },
     "explication": "Le AWS Glue Data Catalog est le metastore centralise qui stocke les schemas et metadonnees de multiples sources de donnees, permettant une decouverte et une gestion coherente des donnees utilisees pour preparer des jeux d'entrainement ML de meilleure qualite, alors que les Crawlers ne font qu'alimenter ce catalogue automatiquement.",
     "domain": "Data Preparation for ML and AI"
+  },
+  {
+    "id": 117,
+    "question": "A company is deploying a machine learning model on an edge device with limited memory and compute resources. Which two techniques can reduce the model size while maintaining similar performance? (Choose two)",
+    "options": {
+      "A": "Prune unnecessary neurons or connections in the model to eliminate redundancy.",
+      "B": "Convert the model's weights to lower-precision data types (e.g., float32 → float16).",
+      "C": "Increase the number of layers in the neural network to improve capacity.",
+      "D": "Add more features to the training data to boost accuracy."
+    },
+    "answer": "A, B",
+    "radar": {
+      "declencheurs": [
+        "edge device with limited memory and compute",
+        "reduce the model size while maintaining similar performance",
+        "choose two"
+      ],
+      "signal": "Reduire la taille du modele pour l'edge -> pruning (elaguer les connexions redondantes) + quantization (precision reduite des poids)",
+      "pieges": {
+        "C": "Ajouter des couches AUGMENTE la taille du modele, l'oppose de l'objectif",
+        "D": "Ajouter des features au dataset d'entrainement n'a pas d'impact direct sur la taille du modele deploye"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Le pruning elimine les neurones/connexions peu utiles du reseau pour reduire sa taille sans trop degrader la performance, tandis que la quantization convertit les poids vers des types de donnees de precision inferieure (ex: float16 voire int8), reduisant significativement l'empreinte memoire et les besoins de calcul, ce qui est essentiel pour un deploiement sur un device edge aux ressources limitees.",
+    "domain": "ML Model and FM Development"
   },
   {
     "id": 118,
@@ -4978,6 +5146,40 @@
     "domain": "Data Preparation for ML and AI"
   },
   {
+    "id": 159,
+    "question": "A news agency runs a document retrieval system that allows journalists to search for articles using natural language queries. Previously, the system relied on a vector database with article embeddings. The agency has now moved all archived articles to an Amazon S3 bucket and needs an AWS-native solution to provide semantic search over the articles. Which option provides the most efficient implementation?",
+    "options": {
+      "A": "Deploy a SageMaker endpoint with a fine-tuned language model and manually integrate it with S3 for retrieval.",
+      "B": "Use Amazon Kendra to index the articles stored in the S3 bucket and enable semantic search with natural language queries.",
+      "C": "Use Amazon Comprehend to extract entities and key phrases and build a custom semantic search engine.",
+      "D": "Use AWS Glue to catalog the S3 data and query it with Amazon Athena for semantic queries."
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "semantic search",
+        "natural language queries",
+        "AWS-native solution",
+        "most efficient implementation"
+      ],
+      "signal": "Recherche semantique en langage naturel sur des documents S3, solution AWS-native prete a l'emploi -> Amazon Kendra",
+      "pieges": {
+        "A": "Deployer et integrer manuellement un modele de langage custom demande un developpement et une maintenance importants",
+        "C": "Comprehend extrait entites/phrases-cles mais ne fournit pas nativement un moteur de recherche semantique complet, il faudrait tout construire soi-meme",
+        "D": "Athena execute des requetes SQL structurees, ce n'est pas un moteur de recherche semantique en langage naturel"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 2,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Amazon Kendra est le service de recherche AWS-natif concu pour indexer des documents (y compris depuis S3) et repondre a des requetes en langage naturel avec une comprehension semantique, offrant une implementation prete a l'emploi bien plus efficace que de construire ou d'integrer manuellement une solution de recherche vectorielle/semantique custom.",
+    "domain": "ML Model and FM Development"
+  },
+  {
     "id": 160,
     "question": "A company uses a machine learning model for real-time fraud detection. Recently, the model's accuracy has started to decrease over time. What is the most likely reason for model drift in this scenario?",
     "options": {
@@ -5367,6 +5569,38 @@
     "domain": "Data Preparation for ML and AI"
   },
   {
+    "id": 172,
+    "question": "A company is building a product recommendation app that queries Amazon Q Business via API. The company wants to ensure that responses never mention its main competitor. Which approach will enforce this requirement?",
+    "options": {
+      "A": "Use document attribute boosting in Amazon Q Business to deprioritize the competitor's name.",
+      "B": "Configure the competitor's name as a blocked phrase in Amazon Q Business.",
+      "C": "Set up an Amazon Kendra retriever to build indexes that omit the competitor's name.",
+      "D": "Configure an Amazon Q Business retriever to exclude the competitor's name."
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "responses never mention",
+        "Amazon Q Business"
+      ],
+      "signal": "Meme pattern que Q34 : garde-fou natif pour bloquer un terme dans les reponses -> blocked phrases",
+      "pieges": {
+        "A": "Le 'deprioritize' via boosting reduit juste la pertinence, sans garantir une exclusion totale ('never mention')",
+        "C": "Omettre un terme de l'INDEX ne garantit pas que le LLM ne le mentionne jamais dans une reponse generee (connaissance parametrique, reformulation)",
+        "D": "Un retriever gere la recherche documentaire, ce n'est pas le mecanisme de filtrage de contenu genere par le modele"
+      },
+      "scores": {
+        "cout": 0,
+        "securite": 3,
+        "haute_dispo": 0,
+        "performance": 0,
+        "op_overhead": 5
+      }
+    },
+    "explication": "Comme pour un scenario equivalent, la fonctionnalite native 'blocked phrases' d'Amazon Q Business garantit qu'aucune reponse contenant le terme bloque (ici, le nom du concurrent) n'est jamais renvoyee a l'utilisateur, ce qui est la seule option assurant une exclusion absolue plutot qu'une simple deprioritisation ou une omission partielle de l'index.",
+    "domain": "Operating, Monitoring, and Securing ML and AI Solutions"
+  },
+  {
     "id": 173,
     "question": "A healthcare company wants to analyze patient records and self-reported text in English to provide treatment recommendations. The company seeks a solution that extracts insights from the text with minimal development effort. Which approach should the company use?",
     "options": {
@@ -5398,6 +5632,39 @@
     },
     "explication": "Amazon Comprehend Medical est un service manage et pretrained specifiquement pour extraire des entites medicales (conditions, medicaments, dosages...) et des insights depuis du texte clinique en langage naturel via une simple API, sans aucun entrainement de modele requis, ce qui minimise l'effort de developpement par rapport a construire un modele seq2seq ou RNN custom.",
     "domain": "ML Model and FM Development"
+  },
+  {
+    "id": 174,
+    "question": "A startup company needs to score credit card transactions for fraud in real-time under 70 ms per request, handling bursts of up to 180,000 requests per minute. The system must protect sensitive user data and maintain high availability. Which AWS solution best meets these requirements?",
+    "options": {
+      "A": "Use Amazon EC2 for both training and hosting with manual scaling, and run Amazon Inspector for security checks.",
+      "B": "Deploy the model on AWS Lambda with Amazon Cognito for user access, relying on serverless scaling to handle transaction bursts.",
+      "C": "Train the model using AWS Glue and deploy it on Amazon ECS with manual scaling, protecting the service via AWS WAF.",
+      "D": "Train and deploy the model on Amazon SageMaker with managed auto-scaling across multiple Availability Zones, and protect the endpoint with AWS Shield Advanced."
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "under 70 ms",
+        "180,000 requests per minute",
+        "protect sensitive user data and maintain high availability"
+      ],
+      "signal": "Meme pattern que Q43 : inference temps reel a forte echelle + haute dispo + donnees sensibles -> SageMaker managed autoscaling multi-AZ + Shield Advanced",
+      "pieges": {
+        "A": "Scaling MANUEL sur EC2 ne peut pas suivre des bursts imprevisibles, et Inspector fait de l'analyse de vulnerabilites, pas de la protection de disponibilite",
+        "B": "Lambda pour de l'inference ML a tres fort volume est risque (cold starts/limites), et Cognito gere l'auth utilisateur, pas la protection DDoS du service",
+        "C": "Scaling manuel sur ECS ne reagit pas assez vite aux pics soudains, et WAF protege contre des attaques applicatives, pas contre l'indisponibilite en charge"
+      },
+      "scores": {
+        "cout": 3,
+        "securite": 4,
+        "haute_dispo": 5,
+        "performance": 5,
+        "op_overhead": 3
+      }
+    },
+    "explication": "Comme pour un scenario equivalent, SageMaker avec autoscaling manage sur plusieurs zones de disponibilite absorbe les pics de charge en temps reel avec une faible latence et une haute disponibilite, tandis qu'AWS Shield Advanced protege l'endpoint public contre les attaques DDoS, ce qui est crucial pour un service de paiement sensible et a fort enjeu de resilience.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows"
   },
   {
     "id": 175,
@@ -5883,6 +6150,71 @@
     },
     "explication": "Le Shadow Testing envoie une copie des requetes de production vers le nouveau modele pour evaluation, tandis que le modele de production actuel continue de repondre exclusivement aux utilisateurs, ce qui correspond exactement au besoin decrit.",
     "domain": "ML Model and FM Development"
+  },
+  {
+    "id": 190,
+    "question": "A computer vision team is training a deep neural network using 32 TB of image data. The training is distributed across 24 GPU-optimized Amazon EC2 instances, and each worker must simultaneously read from and write to the same shared directory structure. The team needs a scalable, high-throughput shared storage solution that supports concurrent access from multiple instances with minimal operational overhead. Which AWS storage service should be used for the shared training data layer?",
+    "options": {
+      "A": "Provision Amazon EBS volumes and attach one volume to each worker instance for local storage.",
+      "B": "Use Amazon S3 as the training data store and rely on local caching on each node.",
+      "C": "Preprocess the data using AWS Glue and store the results in Amazon RDS for workers to read during training.",
+      "D": "Use Amazon EFS and mount it as a shared file system accessible by all training instances."
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "simultaneously read from and write to the same shared directory structure",
+        "concurrent access from multiple instances"
+      ],
+      "signal": "Systeme de fichiers PARTAGE avec acces concurrent en lecture/ecriture depuis 24 instances -> Amazon EFS (NFS partage, POSIX)",
+      "pieges": {
+        "A": "Un volume EBS est attache a UNE SEULE instance a la fois, il ne peut pas etre partage nativement entre 24 workers",
+        "B": "S3 avec cache local par noeud ne fournit pas un vrai systeme de fichiers partage coherent en ecriture concurrente",
+        "C": "RDS est une base de donnees relationnelle, pas un stockage de fichiers adapte a des donnees d'entrainement volumineuses"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 3,
+        "performance": 2,
+        "op_overhead": 4
+      }
+    },
+    "explication": "Amazon EFS est un systeme de fichiers reseau (NFS) manage qui peut etre monte simultanement par de multiples instances EC2, offrant un acces concurrent en lecture/ecriture a une structure de repertoires partagee avec un minimum d'administration, contrairement a EBS (attache a une seule instance) ou RDS (base de donnees, pas un filesystem).",
+    "domain": "Data Preparation for ML and AI"
+  },
+  {
+    "id": 191,
+    "question": "A research organization is training a machine learning model in Amazon SageMaker using a dataset stored in Amazon S3. The dataset contains millions of files, each several megabytes in size. The current training job is slower than expected. The team wants to quickly improve training performance with minimal changes to the existing architecture. Which solution will most effectively improve training performance?",
+    "options": {
+      "A": "Enable S3 Transfer Acceleration and update the training job configuration to use the accelerated data transfer.",
+      "B": "Create an Amazon EFS file system, connect it to the existing S3 bucket, and configure the training job to read data from the file system.",
+      "C": "Configure an Amazon S3 access point and update the training job to read data through the access point.",
+      "D": "Deploy an Amazon FSx for Lustre file system linked to the S3 bucket and configure the training job to read data from the file system."
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "millions of files",
+        "slower than expected",
+        "minimal changes to the existing architecture"
+      ],
+      "signal": "Entrainement lent sur des millions de fichiers S3, changement minimal -> FSx for Lustre lie a S3 (cache haute performance transparent)",
+      "pieges": {
+        "A": "S3 Transfer Acceleration optimise les transferts sur de LONGUES distances geographiques, pas la lecture repetee intra-region pour du training",
+        "B": "'Connecter' EFS a un bucket S3 existant n'est pas un mecanisme natif direct comme le lien FSx for Lustre <-> S3",
+        "C": "Un S3 access point gere l'acces/la gouvernance, il n'ameliore pas le debit de lecture pour des millions de petits fichiers"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 5,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Amazon FSx for Lustre peut etre lie directement a un bucket S3 existant et chargeant les objets a la demande (lazy loading) dans un systeme de fichiers haute performance, ce qui accelere significativement la lecture repetee de millions de fichiers pendant l'entrainement, avec un changement minimal puisqu'il suffit de pointer le training job vers ce nouveau filesystem.",
+    "domain": "Data Preparation for ML and AI"
   },
   {
     "id": 192,
@@ -6637,6 +6969,40 @@
     "domain": "Operating, Monitoring, and Securing ML and AI Solutions"
   },
   {
+    "id": 215,
+    "question": "When using Amazon Lookout for Equipment, you are training models across different machine types. Which data preparation approach will maximize model accuracy?",
+    "options": {
+      "A": "Add a machine_type feature and train one global model",
+      "B": "Merge all machines into one dataset",
+      "C": "Randomly mix records across machines",
+      "D": "Create separate datasets for each equipment type",
+      "E": "Apply identical normalization to all machines"
+    },
+    "answer": "D",
+    "radar": {
+      "declencheurs": [
+        "different machine types",
+        "maximize model accuracy"
+      ],
+      "signal": "Comportements normaux tres differents selon le type de machine -> entrainer un modele DEDIE par type d'equipement (pas un modele global melange)",
+      "pieges": {
+        "A": "Un modele global, meme avec une feature machine_type, dilue les patterns specifiques a chaque type de machine",
+        "B": "Fusionner toutes les machines melange des signatures de fonctionnement tres differentes, degradant la detection d'anomalies fines",
+        "C": "Melanger aleatoirement les records aggrave encore la perte de specificite par type de machine",
+        "E": "Une normalisation identique ignore que differents types de machines ont des plages de valeurs normales tres differentes"
+      },
+      "scores": {
+        "cout": 2,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 4,
+        "op_overhead": 2
+      }
+    },
+    "explication": "Amazon Lookout for Equipment recommande d'entrainer un modele distinct par type d'equipement/actif, car chaque type de machine a des patterns de fonctionnement normal tres differents ; melanger les types dans un modele global dilue ces signatures specifiques et degrade la precision de detection d'anomalies.",
+    "domain": "Data Preparation for ML and AI"
+  },
+  {
     "id": 216,
     "question": "Which features of AWS Cost Explorer help you analyze Amazon SageMaker costs and predict future spending? (Choose two)",
     "options": {
@@ -7198,6 +7564,38 @@
       }
     },
     "explication": "L'Asynchronous Inference de SageMaker est concu pour les requetes a payload volumineux (jusqu'a 1 Go) et a temps de traitement long (jusqu'a une heure). Il met les requetes en file d'attente, ecrit les resultats dans S3 et peut descendre a zero instance entre les pics, tout en restant un service entierement gere : c'est l'option qui repond aux contraintes avec le moins d'administration.",
+    "domain": "Deployment and Orchestration of ML and AI Workflows"
+  },
+  {
+    "id": 233,
+    "question": "A company is deploying machine learning models to edge devices and needs a service that optimizes models for better speed and resource efficiency. Which SageMaker service should be used?",
+    "options": {
+      "A": "SageMaker Ground Truth",
+      "B": "SageMaker Neo",
+      "C": "SageMaker Clarify",
+      "D": "SageMaker Data Wrangler"
+    },
+    "answer": "B",
+    "radar": {
+      "declencheurs": [
+        "deploying machine learning models to edge devices",
+        "optimizes models for better speed and resource efficiency"
+      ],
+      "signal": "Optimisation / compilation d'un modele pour l'edge -> SageMaker Neo",
+      "pieges": {
+        "A": "SageMaker Ground Truth sert a etiqueter des donnees d'entrainement, pas a optimiser des modeles",
+        "C": "SageMaker Clarify analyse les biais et l'explicabilite, sans rapport avec l'optimisation pour l'edge",
+        "D": "SageMaker Data Wrangler prepare les donnees, il n'optimise pas les modeles"
+      },
+      "scores": {
+        "cout": 1,
+        "securite": 0,
+        "haute_dispo": 0,
+        "performance": 3,
+        "op_overhead": 3
+      }
+    },
+    "explication": "SageMaker Neo compile les modeles entraines pour une execution optimisee sur une cible materielle donnee (processeurs ARM, GPU, accelerateurs edge). Il ameliore la vitesse d'inference et reduit l'empreinte memoire sans perte de precision, ce qui en fait le service adapte au deploiement sur appareils edge.",
     "domain": "Deployment and Orchestration of ML and AI Workflows"
   },
   {
