@@ -7,6 +7,7 @@ const COUNT_OPTIONS = [10, 20, 50, 65]
 export default function StartScreen({ cert, bank, setBank, settings, onStart }) {
   const [count, setCount] = useState(settings.count)
   const [timed, setTimed] = useState(settings.timed)
+  const [domain, setDomain] = useState(settings.domain || 'all')
   const [error, setError] = useState('')
   const [loaded, setLoaded] = useState('')
   const fileRef = useRef(null)
@@ -30,7 +31,12 @@ export default function StartScreen({ cert, bank, setBank, settings, onStart }) 
     reader.readAsText(file)
   }
 
-  const maxCount = Math.min(count, bank.length)
+  const domainCounts = {}
+  for (const q of bank) if (q.domain) domainCounts[q.domain] = (domainCounts[q.domain] || 0) + 1
+  const scope = domain !== 'all' && domainCounts[domain] ? domain : 'all'
+  const poolSize = scope === 'all' ? bank.length : domainCounts[scope]
+  const maxCount = Math.min(count, poolSize)
+  const scopeDomain = cert.domains.find((d) => d.name === scope)
 
   return (
     <main className="screen">
@@ -64,6 +70,32 @@ export default function StartScreen({ cert, bank, setBank, settings, onStart }) 
         <h2>Configurer la session</h2>
 
         <label className="field">
+          <span>Périmètre</span>
+          <div className="chips">
+            <button
+              className={`chip ${scope === 'all' ? 'active' : ''}`}
+              onClick={() => setDomain('all')}
+              type="button"
+            >
+              Examen complet
+            </button>
+            {cert.domains.map((d) => (
+              <button
+                key={d.name}
+                title={d.name}
+                className={`chip ${scope === d.name ? 'active' : ''}`}
+                disabled={!domainCounts[d.name]}
+                onClick={() => setDomain(d.name)}
+                type="button"
+              >
+                <span className={`dom-dot ${domainClass(d.name)}`} />
+                Spécial {d.short} ({domainCounts[d.name] || 0})
+              </button>
+            ))}
+          </div>
+        </label>
+
+        <label className="field">
           <span>Nombre de questions</span>
           <div className="chips">
             {COUNT_OPTIONS.map((c) => (
@@ -77,11 +109,11 @@ export default function StartScreen({ cert, bank, setBank, settings, onStart }) 
               </button>
             ))}
             <button
-              className={`chip ${count === bank.length ? 'active' : ''}`}
-              onClick={() => setCount(bank.length)}
+              className={`chip ${count >= poolSize ? 'active' : ''}`}
+              onClick={() => setCount(poolSize)}
               type="button"
             >
-              Toutes ({bank.length})
+              Toutes ({poolSize})
             </button>
           </div>
         </label>
@@ -105,13 +137,15 @@ export default function StartScreen({ cert, bank, setBank, settings, onStart }) 
         <button
           className="primary big"
           type="button"
-          disabled={bank.length === 0}
-          onClick={() => onStart({ count: maxCount, timed })}
+          disabled={poolSize === 0}
+          onClick={() => onStart({ count: maxCount, timed, domain: scope })}
         >
-          Démarrer l'examen ({maxCount} questions)
+          {scopeDomain
+            ? `Démarrer l'examen spécial ${scopeDomain.short} (${maxCount} questions)`
+            : `Démarrer l'examen (${maxCount} questions)`}
         </button>
         <p className="muted small">
-          Banque actuelle : {bank.length} questions.
+          Banque actuelle : {bank.length} questions{scopeDomain ? `, dont ${poolSize} pour ce domaine` : ''}.
           {maxCount >= EXAM.TOTAL_QUESTIONS
             ? ` ${EXAM.SCORED_QUESTIONS} seront notées (comme à l'examen réel).`
             : ' Toutes les questions seront notées.'}

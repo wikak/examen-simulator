@@ -63,6 +63,7 @@ export default function TrainingScreen({ cert }) {
   const [progress, setProgress] = useState(() => loadProgress(cert.progressKey))
 
   // Session settings
+  const [domain, setDomain] = useState('all')
   const [theme, setTheme] = useState('all')
   const [status, setStatus] = useState('all')
   const [qtype, setQtype] = useState('all')
@@ -88,11 +89,16 @@ export default function TrainingScreen({ cert }) {
   const maxId = useMemo(() => bank.reduce((m, q) => Math.max(m, q.id), 0), [bank])
   const parsedFrom = rangeFrom === '' ? null : Math.max(1, parseInt(rangeFrom, 10) || 1)
   const parsedTo = rangeTo === '' ? null : Math.max(1, parseInt(rangeTo, 10) || 1)
-  const cfg = { theme, status, qtype, count, order, rangeFrom: parsedFrom, rangeTo: parsedTo }
+  const cfg = { domain, theme, status, qtype, count, order, rangeFrom: parsedFrom, rangeTo: parsedTo }
   const pool = useMemo(
     () => filterBank(bank, progress, cfg),
-    [bank, progress, theme, status, qtype, parsedFrom, parsedTo],
+    [bank, progress, domain, theme, status, qtype, parsedFrom, parsedTo],
   )
+  const domainCounts = useMemo(() => {
+    const c = {}
+    for (const q of bank) if (q.domain) c[q.domain] = (c[q.domain] || 0) + 1
+    return c
+  }, [bank])
   const lastSeries = useMemo(() => loadLastSession(cert.lastSessionKey, bank), [bank, phase])
 
   const stats = useMemo(() => {
@@ -256,6 +262,32 @@ export default function TrainingScreen({ cert }) {
 
         <section className="card">
           <h2>Paramètres de la session</h2>
+
+          <label className="field">
+            <span>Domaine</span>
+            <div className="chips">
+              <button
+                type="button"
+                className={`chip ${domain === 'all' ? 'active' : ''}`}
+                onClick={() => setDomain('all')}
+              >
+                Tous les domaines
+              </button>
+              {cert.domains.map((d) => (
+                <button
+                  key={d.name}
+                  type="button"
+                  title={d.name}
+                  className={`chip ${domain === d.name ? 'active' : ''}`}
+                  disabled={!domainCounts[d.name]}
+                  onClick={() => setDomain(d.name)}
+                >
+                  <span className={`dom-dot ${domainClass(d.name)}`} />
+                  Spécial {d.short} ({domainCounts[d.name] || 0})
+                </button>
+              ))}
+            </div>
+          </label>
 
           <label className="field">
             <span>Thème</span>

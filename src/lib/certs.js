@@ -15,10 +15,10 @@ export const CERTS = [
     note: 'Version bêta actuelle : 85 questions en 170 min. La simulation suit le format standard du guide (50 notées + 15 non notées).',
     // Reference only (the breakdown is displayed; categories are NOT used to grade).
     domains: [
-      { name: 'Data Preparation for ML and AI', weight: 28 },
-      { name: 'ML Model and FM Development', weight: 24 },
-      { name: 'Deployment and Orchestration of ML and AI Workflows', weight: 24 },
-      { name: 'Operating, Monitoring, and Securing ML and AI Solutions', weight: 24 },
+      { name: 'Data Preparation for ML and AI', short: 'Préparer les données', weight: 28 },
+      { name: 'ML Model and FM Development', short: 'Développer les modèles', weight: 24 },
+      { name: 'Deployment and Orchestration of ML and AI Workflows', short: 'Déployer et orchestrer', weight: 24 },
+      { name: 'Operating, Monitoring, and Securing ML and AI Solutions', short: 'Surveiller et sécuriser', weight: 24 },
     ],
     progressKey: 'aws-sandbox-progress-mla-c02-v1',
     lastSessionKey: 'aws-sandbox-last-session-mla-c02-v1',
@@ -31,10 +31,10 @@ export const CERTS = [
     trainingBank: saaEnriched,
     experience: '1 an de pratique AWS',
     domains: [
-      { name: 'Design Secure Architectures', weight: 30 },
-      { name: 'Design Resilient Architectures', weight: 26 },
-      { name: 'Design High-Performing Architectures', weight: 24 },
-      { name: 'Design Cost-Optimized Architectures', weight: 20 },
+      { name: 'Design Secure Architectures', short: 'Architectures sécurisées', weight: 30 },
+      { name: 'Design Resilient Architectures', short: 'Architectures résilientes', weight: 26 },
+      { name: 'Design High-Performing Architectures', short: 'Architectures performantes', weight: 24 },
+      { name: 'Design Cost-Optimized Architectures', short: 'Architectures optimisées en coût', weight: 20 },
     ],
     // Keys kept from the single-cert version so existing progress is preserved.
     progressKey: 'aws-sandbox-progress-v1',

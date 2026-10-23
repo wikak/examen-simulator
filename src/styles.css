@@ -121,6 +121,9 @@ body {
 }
 .chip:hover { border-color: var(--orange-line); }
 .chip.active { background: var(--orange); color: #111; border-color: var(--orange); font-weight: 700; }
+.chip:disabled { opacity: .45; cursor: not-allowed; }
+.chip:disabled:hover { border-color: var(--line); }
+.chip .dom-dot { margin-right: 6px; }
 
 .ok { color: var(--green-ink); }
 .err { color: var(--red-ink); }
@@ -169,6 +172,11 @@ button { font-family: inherit; }
 .dom-3       { background: #e7f7f2; color: #13795f; border-color: #b3e3d4; }
 .dom-4       { background: #fff4e3; color: #9a5b00; border-color: #f3d29a; }
 .dom-default { background: var(--panel-2); color: var(--muted); border-color: var(--line); }
+/* Dots use the strong ink colour so they stay visible on white. */
+.dom-dot.dom-1 { background: #1d5fbf; }
+.dom-dot.dom-2 { background: #5b3fc4; }
+.dom-dot.dom-3 { background: #13795f; }
+.dom-dot.dom-4 { background: #d08a1c; }
 
 /* ---------- Code / JSON blocks ---------- */
 .code-block {

@@ -64,8 +64,9 @@ export function isMastered(entry) {
   return !!entry && entry.streak >= 2
 }
 
-export function filterBank(bank, progress, { theme, status, qtype, rangeFrom, rangeTo }) {
+export function filterBank(bank, progress, { domain = 'all', theme, status, qtype, rangeFrom, rangeTo }) {
   return bank.filter((q) => {
+    if (domain !== 'all' && q.domain !== domain) return false
     if (rangeFrom != null && q.id < rangeFrom) return false
     if (rangeTo != null && q.id > rangeTo) return false
     if (theme !== 'all' && dominantTheme(q) !== theme) return false

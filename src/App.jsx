@@ -11,7 +11,7 @@ export default function App() {
   const [mode, setMode] = useState('training') // training | exam
   const [phase, setPhase] = useState('start') // start | exam | results
   const [bank, setBank] = useState(() => cert.examBank)
-  const [settings, setSettings] = useState({ count: 65, timed: true })
+  const [settings, setSettings] = useState({ count: 65, timed: true, domain: 'all' })
   const [exam, setExam] = useState([])
   const [result, setResult] = useState(null)
 
@@ -22,8 +22,9 @@ export default function App() {
   function startExam(opts) {
     const cfg = { ...settings, ...opts }
     setSettings(cfg)
-    const count = Math.min(cfg.count, bank.length)
-    setExam(buildExam(bank, count))
+    const pool = cfg.domain && cfg.domain !== 'all' ? bank.filter((q) => q.domain === cfg.domain) : bank
+    const count = Math.min(cfg.count, pool.length)
+    setExam(buildExam(pool, count))
     setResult(null)
     setPhase('exam')
   }
@@ -48,6 +49,7 @@ export default function App() {
     saveCert(c)
     setCert(c)
     setBank(c.examBank)
+    setSettings((s) => ({ ...s, domain: 'all' }))
     setExam([])
     setResult(null)
     setPhase('start')
