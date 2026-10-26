@@ -134,7 +134,7 @@ export function loadRunState(storageKey, bank) {
     if (session.length === 0) return null
     const sessionById = new Map(session.map((q) => [q.id, q]))
     return {
-      phase: s.phase === 'summary' ? 'summary' : 'run',
+      phase: s.phase === 'run' || s.phase === 'summary' ? s.phase : 'config',
       session,
       index: Math.min(Math.max(0, s.index | 0), session.length - 1),
       selected: Array.isArray(s.selected) ? s.selected : [],
@@ -146,12 +146,6 @@ export function loadRunState(storageKey, bank) {
   } catch {
     return null
   }
-}
-
-export function clearRunState(storageKey) {
-  try {
-    localStorage.removeItem(storageKey)
-  } catch {}
 }
 
 /* ---------- Session settings (filters) ---------- */

@@ -7,7 +7,6 @@ import {
   THEME_LABELS,
   buildTrainingSession,
   clearProgress,
-  clearRunState,
   dominantTheme,
   filterBank,
   isMastered,
@@ -96,11 +95,14 @@ export default function TrainingScreen({ cert }) {
   const [revealed, setRevealed] = useState(restored?.revealed || false)
   const [results, setResults] = useState(restored?.results || []) // [{ q, selected, ok }]
 
+  // The series is kept until a new one is launched, so an interrupted one can be resumed later.
   useEffect(() => {
-    if (phase === 'run' || phase === 'summary') {
+    if (session.length > 0) {
       saveRunState(cert.runKey, { phase, session, index, selected, revealed, results })
     }
   }, [phase, session, index, selected, revealed, results])
+  const unfinished = session.length > 0 && results.length < session.length
+  const answeredOk = results.filter((r) => r.ok).length
 
   useEffect(() => {
     saveTrainingSettings(cert.trainingSettingsKey, {
@@ -154,6 +156,11 @@ export default function TrainingScreen({ cert }) {
 
   function startSession() {
     launch(buildTrainingSession(bank, progress, cfg), { save: true })
+  }
+
+  function resumeSeries() {
+    setPhase('run')
+    window.scrollTo(0, 0)
   }
 
   function replaySeries() {
@@ -284,6 +291,19 @@ export default function TrainingScreen({ cert }) {
             )}
           </div>
         </section>
+
+        {unfinished && (
+          <section className="card">
+            <h2>Série en cours</h2>
+            <p className="muted">
+              {results.length} / {session.length} questions répondues · ✅ {answeredOk} · ❌{' '}
+              {results.length - answeredOk}
+            </p>
+            <button type="button" className="primary big" onClick={resumeSeries}>
+              ▶ Reprendre la série à la question {index + 1} / {session.length}
+            </button>
+          </section>
+        )}
 
         <section className="card">
           <h2>Paramètres de la session</h2>
@@ -660,9 +680,19 @@ export default function TrainingScreen({ cert }) {
             <span>❌ {results.length - good} ratée(s)</span>
             <span>{results.length} répondues</span>
           </div>
+          {unfinished && (
+            <p className="muted">
+              Série interrompue : {session.length - results.length} question(s) restante(s).
+            </p>
+          )}
           <div className="actions">
+            {unfinished && (
+              <button type="button" className="primary" onClick={resumeSeries}>
+                ▶ Reprendre la série ({index + 1} / {session.length})
+              </button>
+            )}
             {wrongs.length > 0 && (
-              <button type="button" className="primary" onClick={replayErrors}>
+              <button type="button" className={unfinished ? 'ghost' : 'primary'} onClick={replayErrors}>
                 🔁 Rejouer mes {wrongs.length} erreur(s)
               </button>
             )}
@@ -672,11 +702,7 @@ export default function TrainingScreen({ cert }) {
             <button type="button" className="ghost" onClick={startSession}>
               Nouvelle session
             </button>
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => { clearRunState(cert.runKey); setPhase('config') }}
-            >
+            <button type="button" className="ghost" onClick={() => setPhase('config')}>
               Paramètres
             </button>
           </div>
