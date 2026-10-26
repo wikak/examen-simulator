@@ -22,6 +22,8 @@ export const CERTS = [
     ],
     progressKey: 'aws-sandbox-progress-mla-c02-v1',
     lastSessionKey: 'aws-sandbox-last-session-mla-c02-v1',
+    runKey: 'aws-sandbox-run-mla-c02-v1',
+    trainingSettingsKey: 'aws-sandbox-training-settings-mla-c02-v1',
   },
   {
     key: 'saa-c03',
@@ -39,6 +41,8 @@ export const CERTS = [
     // Keys kept from the single-cert version so existing progress is preserved.
     progressKey: 'aws-sandbox-progress-v1',
     lastSessionKey: 'aws-sandbox-last-session-v1',
+    runKey: 'aws-sandbox-run-v1',
+    trainingSettingsKey: 'aws-sandbox-training-settings-v1',
   },
 ]
 

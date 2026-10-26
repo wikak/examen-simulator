@@ -1,6 +1,6 @@
 // Sandbox training mode: filters and localStorage progress (one storage key per certification).
 
-import { parseLetters, shuffle } from './exam.js'
+import { parseLetters, reorderOptions, shuffle } from './exam.js'
 
 export const THEMES = [
   { key: 'cout', label: '💰 Coût' },
@@ -93,6 +93,80 @@ export function buildTrainingSession(bank, progress, cfg) {
 export function saveLastSession(storageKey, questions) {
   try {
     localStorage.setItem(storageKey, JSON.stringify(questions.map((q) => q.id)))
+  } catch {}
+}
+
+/* ---------- Session in progress (survives tab switch, cert switch and reload) ---------- */
+
+export function saveRunState(storageKey, { phase, session, index, selected, revealed, results }) {
+  try {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        phase,
+        ids: session.map((q) => q.id),
+        orders: session.map((q) => q.optionOrder || null),
+        index,
+        selected,
+        revealed,
+        results: results.map((r) => ({ id: r.q.id, selected: r.selected, ok: r.ok })),
+      }),
+    )
+  } catch {}
+}
+
+export function loadRunState(storageKey, bank) {
+  try {
+    const s = JSON.parse(localStorage.getItem(storageKey))
+    if (!s || !Array.isArray(s.ids)) return null
+    const byId = new Map(bank.map((q) => [q.id, q]))
+    // Same option order as when the session was saved (answers were given with those letters).
+    const session = s.ids
+      .map((id, i) => {
+        const q = byId.get(id)
+        const order = s.orders?.[i]
+        if (!q) return null
+        const valid = Array.isArray(order) && order.length === Object.keys(q.options).length &&
+          order.every((k) => k in q.options)
+        return valid ? reorderOptions(q, order) : q
+      })
+      .filter(Boolean)
+    if (session.length === 0) return null
+    const sessionById = new Map(session.map((q) => [q.id, q]))
+    return {
+      phase: s.phase === 'summary' ? 'summary' : 'run',
+      session,
+      index: Math.min(Math.max(0, s.index | 0), session.length - 1),
+      selected: Array.isArray(s.selected) ? s.selected : [],
+      revealed: !!s.revealed,
+      results: (s.results || [])
+        .filter((r) => sessionById.has(r.id))
+        .map((r) => ({ q: sessionById.get(r.id), selected: r.selected, ok: r.ok })),
+    }
+  } catch {
+    return null
+  }
+}
+
+export function clearRunState(storageKey) {
+  try {
+    localStorage.removeItem(storageKey)
+  } catch {}
+}
+
+/* ---------- Session settings (filters) ---------- */
+
+export function loadTrainingSettings(storageKey) {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey)) || {}
+  } catch {
+    return {}
+  }
+}
+
+export function saveTrainingSettings(storageKey, settings) {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(settings))
   } catch {}
 }
 

@@ -20,6 +20,49 @@ export function shuffle(arr) {
   return a
 }
 
+// Option letters quoted in explanations: "(D)", "(A/D)", "option B", "reponse D", "options B et D", "B et D".
+const LETTER_REF =
+  /\(([A-F](?:\s*[/,]\s*[A-F])*)\)|\b((?:[Oo]ptions?|[Rr][ée]ponses?|[Cc]hoix|[Aa]nswers?)\s+)([A-F](?:\s*(?:,|\/|et|and|ou|or)\s*[A-F])*)\b|\b([A-F]\s+(?:et|and)\s+[A-F])\b/g
+
+function relabelText(text, map) {
+  if (!text) return text
+  const swap = (s) => s.replace(/\b[A-F]\b/g, (l) => map[l] || l)
+  return text.replace(LETTER_REF, (m, paren, word, letters, pair) => {
+    if (paren != null) return `(${swap(paren)})`
+    if (word != null) return word + swap(letters)
+    return swap(pair)
+  })
+}
+
+// Show the options in `order` (original letters, e.g. ['C','A','D','B']): option C becomes A, etc.
+// Answer, traps and letter references in the explanation follow the new letters.
+export function reorderOptions(q, order) {
+  const map = {}
+  order.forEach((k, i) => { map[k] = String.fromCharCode(65 + i) })
+  const options = {}
+  for (const k of order) options[map[k]] = q.options[k]
+  const answer = parseLetters(q.answer).map((l) => map[l] || l).sort().join(', ')
+  let radar = q.radar
+  if (radar) {
+    const pieges = radar.pieges
+      ? Object.fromEntries(Object.entries(radar.pieges).map(([k, v]) => [map[k] || k, relabelText(v, map)]))
+      : radar.pieges
+    radar = { ...radar, signal: relabelText(radar.signal, map), pieges }
+  }
+  return {
+    ...q,
+    options,
+    answer,
+    ...(radar ? { radar } : {}),
+    ...(q.explication ? { explication: relabelText(q.explication, map) } : {}),
+    optionOrder: order,
+  }
+}
+
+export function shuffleOptions(q) {
+  return reorderOptions(q, shuffle(Object.keys(q.options)))
+}
+
 // "C" -> ["C"];  "B, C" -> ["B","C"];  "BD" -> ["B","D"]
 export function parseLetters(answer) {
   const tokens = Array.isArray(answer)
@@ -69,7 +112,7 @@ export function buildExam(bank, count) {
   } else {
     scoredIdx = new Set([...Array(n).keys()]) // small bank: everything counts
   }
-  return picked.map((q, i) => ({ ...q, scored: scoredIdx.has(i) }))
+  return picked.map((q, i) => ({ ...shuffleOptions(q), scored: scoredIdx.has(i) }))
 }
 
 export function isCorrect(q, selected) {

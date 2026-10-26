@@ -1,20 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
 import RichText from './RichText.jsx'
-import { isCorrect, parseLetters } from '../lib/exam.js'
+import { isCorrect, parseLetters, shuffleOptions } from '../lib/exam.js'
 import { domainClass } from '../lib/certs.js'
 import {
   THEMES,
   THEME_LABELS,
   buildTrainingSession,
   clearProgress,
+  clearRunState,
   dominantTheme,
   filterBank,
   isMastered,
   loadLastSession,
   loadProgress,
+  loadRunState,
+  loadTrainingSettings,
   recordAnswer,
   saveLastSession,
   saveProgress,
+  saveRunState,
+  saveTrainingSettings,
 } from '../lib/training.js'
 
 const COUNT_OPTIONS = [10, 20, 50]
@@ -59,19 +64,24 @@ function formatLast(ts) {
 
 export default function TrainingScreen({ cert }) {
   const bank = cert.trainingBank
-  const [phase, setPhase] = useState('config') // config | run | summary
+  // Session in progress and filters saved on a previous visit (tab switch, reload…)
+  const [restored] = useState(() => loadRunState(cert.runKey, bank))
+  const [saved] = useState(() => loadTrainingSettings(cert.trainingSettingsKey))
+  const [phase, setPhase] = useState(restored?.phase || 'config') // config | run | summary | tracking
   const [progress, setProgress] = useState(() => loadProgress(cert.progressKey))
 
   // Session settings
-  const [domain, setDomain] = useState('all')
-  const [theme, setTheme] = useState('all')
-  const [status, setStatus] = useState('all')
-  const [qtype, setQtype] = useState('all')
-  const [count, setCount] = useState(20)
-  const [order, setOrder] = useState('random')
-  const [showHints, setShowHints] = useState(true)
-  const [rangeFrom, setRangeFrom] = useState('')
-  const [rangeTo, setRangeTo] = useState('')
+  const [domain, setDomain] = useState(() =>
+    cert.domains.some((d) => d.name === saved.domain) ? saved.domain : 'all',
+  )
+  const [theme, setTheme] = useState(saved.theme || 'all')
+  const [status, setStatus] = useState(saved.status || 'all')
+  const [qtype, setQtype] = useState(saved.qtype || 'all')
+  const [count, setCount] = useState(saved.count || 20)
+  const [order, setOrder] = useState(saved.order || 'random')
+  const [showHints, setShowHints] = useState(saved.showHints ?? true)
+  const [rangeFrom, setRangeFrom] = useState(saved.rangeFrom || '')
+  const [rangeTo, setRangeTo] = useState(saved.rangeTo || '')
 
   // Tracking view
   const [trackFilter, setTrackFilter] = useState('seen')
@@ -80,11 +90,23 @@ export default function TrainingScreen({ cert }) {
   const [expandedId, setExpandedId] = useState(null)
 
   // Running session
-  const [session, setSession] = useState([])
-  const [index, setIndex] = useState(0)
-  const [selected, setSelected] = useState([])
-  const [revealed, setRevealed] = useState(false)
-  const [results, setResults] = useState([]) // [{ q, selected, ok }]
+  const [session, setSession] = useState(restored?.session || [])
+  const [index, setIndex] = useState(restored?.index || 0)
+  const [selected, setSelected] = useState(restored?.selected || [])
+  const [revealed, setRevealed] = useState(restored?.revealed || false)
+  const [results, setResults] = useState(restored?.results || []) // [{ q, selected, ok }]
+
+  useEffect(() => {
+    if (phase === 'run' || phase === 'summary') {
+      saveRunState(cert.runKey, { phase, session, index, selected, revealed, results })
+    }
+  }, [phase, session, index, selected, revealed, results])
+
+  useEffect(() => {
+    saveTrainingSettings(cert.trainingSettingsKey, {
+      domain, theme, status, qtype, count, order, showHints, rangeFrom, rangeTo,
+    })
+  }, [domain, theme, status, qtype, count, order, showHints, rangeFrom, rangeTo])
 
   const maxId = useMemo(() => bank.reduce((m, q) => Math.max(m, q.id), 0), [bank])
   const parsedFrom = rangeFrom === '' ? null : Math.max(1, parseInt(rangeFrom, 10) || 1)
@@ -115,10 +137,13 @@ export default function TrainingScreen({ cert }) {
     return { seen, mastered, wrong, total: bank.length }
   }, [bank, progress])
 
+  const bankById = useMemo(() => new Map(bank.map((bq) => [bq.id, bq])), [bank])
+
   function launch(list, { save = false } = {}) {
     if (!list || list.length === 0) return
     if (save) saveLastSession(cert.lastSessionKey, list)
-    setSession(list)
+    // New option order on every launch, always shuffled from the original question.
+    setSession(list.map((lq) => shuffleOptions(bankById.get(lq.id) || lq)))
     setIndex(0)
     setSelected([])
     setRevealed(false)
@@ -647,7 +672,11 @@ export default function TrainingScreen({ cert }) {
             <button type="button" className="ghost" onClick={startSession}>
               Nouvelle session
             </button>
-            <button type="button" className="ghost" onClick={() => setPhase('config')}>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => { clearRunState(cert.runKey); setPhase('config') }}
+            >
               Paramètres
             </button>
           </div>
