@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatTime, isMultiAnswer, parseLetters } from '../lib/exam.js'
 import { domainClass } from '../lib/certs.js'
+import { frOption, frQuestion } from '../lib/i18n.js'
 import RichText from './RichText.jsx'
 
-export default function ExamScreen({ exam, timed, timeLimit, onSubmit, onQuit }) {
+export default function ExamScreen({ exam, fr, timed, timeLimit, onSubmit, onQuit }) {
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState({}) // { [qid]: ["A","C"] }
   const [flags, setFlags] = useState({}) // { [qid]: true }
@@ -76,7 +77,10 @@ export default function ExamScreen({ exam, timed, timeLimit, onSubmit, onQuit })
         <div className="card question-card">
           {q.domain && <span className={`domain-badge ${domainClass(q.domain)}`}>{q.domain}</span>}
           {multi && <p className="multi-hint">Choisissez {parseLetters(q.answer).length} réponses.</p>}
-          <div className="question-text"><RichText text={q.question} /></div>
+          <div className="question-text">
+            <RichText text={q.question} />
+            {frQuestion(fr, q) && <p className="fr-text">{frQuestion(fr, q)}</p>}
+          </div>
 
           <ul className="options">
             {optionKeys.map((k) => {
@@ -89,7 +93,10 @@ export default function ExamScreen({ exam, timed, timeLimit, onSubmit, onQuit })
                     onClick={() => choose(k)}
                   >
                     <span className="opt-key">{multi ? (active ? '☑' : '☐') : (active ? '●' : '○')} {k}</span>
-                    <span className="opt-text"><RichText text={q.options[k]} /></span>
+                    <span className="opt-text">
+                      <RichText text={q.options[k]} />
+                      {frOption(fr, q, k) && <span className="fr-opt">{frOption(fr, q, k)}</span>}
+                    </span>
                   </button>
                 </li>
               )

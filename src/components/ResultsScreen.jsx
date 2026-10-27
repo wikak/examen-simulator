@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { EXAM, formatTime, parseLetters } from '../lib/exam.js'
 import { domainClass } from '../lib/certs.js'
+import { frOption, frQuestion } from '../lib/i18n.js'
 import RichText from './RichText.jsx'
 
-export default function ResultsScreen({ result, onRestart, onRetry }) {
+export default function ResultsScreen({ result, fr, onRestart, onRetry }) {
   const [filter, setFilter] = useState('all') // all | incorrect
   const { review, scaledScore, passed, correctScored, scoredTotal, correctOverall, total, accuracy, timeUsed } = result
 
@@ -52,7 +53,10 @@ export default function ResultsScreen({ result, onRestart, onRetry }) {
                   <span className={`tag ${ok ? 'ok' : 'ko'}`}>{ok ? '✓' : '✗'}</span>
                   {q.domain && <span className={`tag domain ${domainClass(q.domain)}`}>{q.domain}</span>}
                   {!q.scored && <span className="tag unscored" title="Question non notée">non notée</span>}
-                  <span><RichText text={q.question} /></span>
+                  <span>
+                    <RichText text={q.question} />
+                    {frQuestion(fr, q) && <span className="fr-text">{frQuestion(fr, q)}</span>}
+                  </span>
                 </div>
                 <ul className="review-opts">
                   {Object.keys(q.options).map((k) => {
@@ -66,6 +70,7 @@ export default function ResultsScreen({ result, onRestart, onRetry }) {
                         <strong>{k}.</strong> <RichText text={q.options[k]} />
                         {isCorrect && <em className="mark"> ✓ bonne réponse</em>}
                         {isChosen && !isCorrect && <em className="mark"> ✗ votre choix</em>}
+                        {frOption(fr, q, k) && <span className="fr-opt">{frOption(fr, q, k)}</span>}
                       </li>
                     )
                   })}

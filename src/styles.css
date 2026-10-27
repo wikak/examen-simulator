@@ -265,6 +265,15 @@ button { font-family: inherit; }
 
 .footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 28px; }
 
+/* ---------- French translation (shown under the English original) ---------- */
+.fr-text {
+  display: block; margin: 10px 0 0; padding: 8px 12px;
+  border-left: 3px solid var(--blue); background: var(--blue-soft);
+  border-radius: 0 6px 6px 0; color: #314158; font-size: .93rem; font-style: italic;
+}
+.fr-opt { display: block; margin-top: 4px; font-size: .85rem; color: var(--muted); font-style: italic; }
+.option.selected .fr-opt { color: inherit; opacity: .8; }
+
 /* ---------- Mode tabs ---------- */
 .tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 0; }
 .tab {
@@ -273,6 +282,20 @@ button { font-family: inherit; }
   border-radius: 10px 10px 0 0; padding: 11px 20px; font-size: .95rem; font-weight: 600;
 }
 .tab:hover { color: var(--ink); }
+.fr-toggle {
+  margin: 0 0 8px auto; align-self: center; cursor: pointer;
+  background: var(--panel); color: var(--muted); font-size: .82rem; font-weight: 600;
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+}
+.fr-toggle:hover:not(:disabled) { color: var(--ink); border-color: var(--blue); }
+.fr-toggle.active { background: var(--blue-soft); color: var(--blue); border-color: var(--blue); }
+.fr-toggle:disabled { opacity: .5; cursor: not-allowed; }
+.fr-toggle-short { display: none; }
+@media (max-width: 600px) {
+  .fr-toggle { padding: 5px 10px; white-space: nowrap; }
+  .fr-toggle-label { display: none; }
+  .fr-toggle-short { display: inline; }
+}
 .tab.active {
   background: var(--panel); color: var(--orange-ink);
   border-color: var(--line); margin-bottom: -1px;

@@ -5,6 +5,7 @@ import ResultsScreen from './components/ResultsScreen.jsx'
 import TrainingScreen from './components/TrainingScreen.jsx'
 import { buildExam, evaluate, EXAM } from './lib/exam.js'
 import { CERTS, loadCert, saveCert } from './lib/certs.js'
+import { loadShowFr, saveShowFr, useTranslations } from './lib/i18n.js'
 
 export default function App() {
   const [cert, setCert] = useState(loadCert)
@@ -14,6 +15,18 @@ export default function App() {
   const [settings, setSettings] = useState({ count: 65, timed: true, domain: 'all' })
   const [exam, setExam] = useState([])
   const [result, setResult] = useState(null)
+  const [showFr, setShowFr] = useState(loadShowFr)
+  const hasFr = !!cert.trainingFr
+  const frTraining = useTranslations(cert.trainingFr, showFr)
+  // An imported custom bank has its own ids: no translation for it.
+  const frExam = useTranslations(cert.examFr, showFr && bank === cert.examBank)
+
+  function toggleFr() {
+    setShowFr((on) => {
+      saveShowFr(!on)
+      return !on
+    })
+  }
 
   useEffect(() => {
     document.title = `AWS ${cert.code} — Exam Simulator`
@@ -94,9 +107,24 @@ export default function App() {
         >
           🎯 Simulation d'examen
         </button>
+        <button
+          type="button"
+          className={`fr-toggle ${showFr && hasFr ? 'active' : ''}`}
+          aria-pressed={showFr && hasFr}
+          disabled={!hasFr}
+          title={
+            hasFr
+              ? 'Afficher la traduction française sous le texte anglais'
+              : `Traduction pas encore disponible pour ${cert.code}`
+          }
+          onClick={toggleFr}
+        >
+          🇫🇷 <span className="fr-toggle-label">Traduction {showFr && hasFr ? 'activée' : 'désactivée'}</span>
+          <span className="fr-toggle-short">FR</span>
+        </button>
       </nav>
 
-      {mode === 'training' && <TrainingScreen key={cert.key} cert={cert} />}
+      {mode === 'training' && <TrainingScreen key={cert.key} cert={cert} fr={frTraining} />}
 
       {mode === 'exam' && phase === 'start' && (
         <StartScreen
@@ -112,6 +140,7 @@ export default function App() {
       {mode === 'exam' && phase === 'exam' && (
         <ExamScreen
           exam={exam}
+          fr={frExam}
           timed={settings.timed}
           timeLimit={exam.length * EXAM.SECONDS_PER_QUESTION}
           onSubmit={finishExam}
@@ -122,6 +151,7 @@ export default function App() {
       {mode === 'exam' && phase === 'results' && (
         <ResultsScreen
           result={result}
+          fr={frExam}
           onRestart={() => setPhase('start')}
           onRetry={() => startExam({})}
         />

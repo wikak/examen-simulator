@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import RichText from './RichText.jsx'
 import { isCorrect, parseLetters, shuffleOptions } from '../lib/exam.js'
 import { domainClass } from '../lib/certs.js'
+import { frOption, frQuestion } from '../lib/i18n.js'
 import {
   THEMES,
   THEME_LABELS,
@@ -61,7 +62,7 @@ function formatLast(ts) {
   return `il y a ${Math.round(h / 24)} j`
 }
 
-export default function TrainingScreen({ cert }) {
+export default function TrainingScreen({ cert, fr }) {
   const bank = cert.trainingBank
   // Session in progress and filters saved on a previous visit (tab switch, reload…)
   const [restored] = useState(() => loadRunState(cert.runKey, bank))
@@ -632,12 +633,16 @@ export default function TrainingScreen({ cert }) {
                           </span>
                         )}
                       </div>
-                      <div className="question-text"><RichText text={tq.question} /></div>
+                      <div className="question-text">
+                        <RichText text={tq.question} />
+                        {frQuestion(fr, tq) && <p className="fr-text">{frQuestion(fr, tq)}</p>}
+                      </div>
                       <ul className="review-opts">
                         {Object.keys(tq.options).map((k) => (
                           <li key={k} className={correctLtrs.includes(k) ? 'correct' : ''}>
                             <strong>{k}.</strong> <RichText text={tq.options[k]} />
                             {correctLtrs.includes(k) && <em className="mark">✓ bonne réponse</em>}
+                            {frOption(fr, tq, k) && <span className="fr-opt">{frOption(fr, tq, k)}</span>}
                           </li>
                         ))}
                       </ul>
@@ -718,6 +723,7 @@ export default function TrainingScreen({ cert }) {
                     <span className="tag ko">✗</span>
                     <div>
                       <RichText text={wq.question} />
+                      {frQuestion(fr, wq) && <p className="fr-text">{frQuestion(fr, wq)}</p>}
                     </div>
                   </div>
                   <p className="muted small">
@@ -778,7 +784,10 @@ export default function TrainingScreen({ cert }) {
             </div>
           )}
 
-          <div className="question-text"><RichText text={q.question} /></div>
+          <div className="question-text">
+            <RichText text={q.question} />
+            {frQuestion(fr, q) && <p className="fr-text">{frQuestion(fr, q)}</p>}
+          </div>
 
           <ul className="options">
             {Object.keys(q.options).map((k) => {
@@ -810,6 +819,7 @@ export default function TrainingScreen({ cert }) {
                     </span>
                     <span className="opt-text">
                       <RichText text={q.options[k]} />
+                      {frOption(fr, q, k) && <span className="fr-opt">{frOption(fr, q, k)}</span>}
                       {piege && <span className="piege">⚠️ {piege}</span>}
                     </span>
                   </button>

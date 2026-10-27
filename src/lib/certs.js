@@ -4,6 +4,9 @@ import mlaBank from '../data/questions_mla_c02.json'
 import saaBank from '../data/questions.json'
 import saaEnriched from '../data/resultat_enrichi_final.json'
 
+// French translations, split into their own chunk (see lib/i18n.js).
+const loadMlaFr = () => import('../data/fr/questions_mla_c02.fr.json')
+
 export const CERTS = [
   {
     key: 'mla-c02',
@@ -11,6 +14,8 @@ export const CERTS = [
     title: 'Machine Learning Engineer – Associate',
     examBank: mlaBank,
     trainingBank: mlaBank,
+    examFr: loadMlaFr,
+    trainingFr: loadMlaFr,
     experience: "1 an d'expérience avec SageMaker AI, Amazon Bedrock et les services ML d'AWS",
     note: 'Version bêta actuelle : 85 questions en 170 min. La simulation suit le format standard du guide (50 notées + 15 non notées).',
     // Reference only (the breakdown is displayed; categories are NOT used to grade).
